@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"image/color"
 	"net/http"
+	"os"
+	pl "qusic/player"
 	"qusic/spotify"
 	"qusic/widgets"
-	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -19,23 +19,30 @@ import (
 	"github.com/fstanis/screenresolution"
 )
 
+var id = os.Getenv("SPOTIFY_ID")
+var secret = os.Getenv("SPOTIFY_SECRET")
+
+var client = spotify.New(id, secret)
+var player = pl.New(client)
+
+func init() {
+	player.Initialize()
+}
+
 func homePage() fyne.CanvasObject {
 	return container.NewWithoutLayout()
 }
 
 var searchContent = (fyne.CanvasObject)(container.NewWithoutLayout())
 
-// var songProgress *widget.ProgressBar
 var songProgressSlider *widget.Slider
 
 func durString(dur time.Duration) string {
 	return fmt.Sprintf("%02d:%02d", int(dur.Minutes())%60, int(dur.Seconds())%60)
 }
 
-func setPlayedSong(song spotify.TrackObject, w fyne.Window) {
-	<-songChanged
+func setPlayedSong(song *pl.Song, w fyne.Window) {
 	song.FetchSongInfo()
-	currentSong = song
 
 	image := song.Album.Images[2]
 	d, _ := http.Get(image.URL)
@@ -43,14 +50,12 @@ func setPlayedSong(song spotify.TrackObject, w fyne.Window) {
 
 	back := widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), nil)
 	back.Importance = widget.LowImportance
-	//pause := widget.NewButtonWithIcon("", theme.MediaPauseIcon(), nil)
 	pause := &widgets.RoundedButton{
-		Icon:  theme.MediaPauseIcon(),
-		Color: color.White,
+		Icon: theme.MediaPauseIcon(),
 	}
 	pause.OnTapped = func() {
-		pauseResume()
-		if paused {
+		player.PauseCycle()
+		if player.Paused() {
 			pause.Icon = theme.MediaPlayIcon()
 		} else {
 			pause.Icon = theme.MediaPauseIcon()
@@ -60,9 +65,9 @@ func setPlayedSong(song spotify.TrackObject, w fyne.Window) {
 	next := widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), nil)
 	next.Importance = widget.LowImportance
 
-	songProgressSlider = widget.NewSlider(0, float64(currentSong.DurationMS))
+	songProgressSlider = widget.NewSlider(0, float64(song.DurationMS))
 
-	full := time.Millisecond * time.Duration(currentSong.DurationMS)
+	full := time.Millisecond * time.Duration(song.DurationMS)
 
 	p, f := widget.NewLabel("00:00"), widget.NewLabel(durString(full))
 	prevf := 0.0
@@ -72,7 +77,7 @@ func setPlayedSong(song spotify.TrackObject, w fyne.Window) {
 
 		p.SetText(durString(passed))
 		if f-prevf > 1000 {
-			seek(int(f / 1000))
+			player.Seek(int(f / 1000))
 		}
 		prevf = f
 	}
@@ -115,22 +120,9 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 				Image:          img,
 				DurationString: durString(time.Duration(song.DurationMS) * time.Millisecond),
 				OnTapped: func() {
-					playSong(song)
-					setPlayedSong(song, w)
-
-					tick := time.NewTicker(time.Millisecond)
-					go func() {
-						for {
-							select {
-							case <-songChanged:
-								return
-							case <-tick.C:
-								// in seconds
-								passed, _ := strconv.ParseFloat(player.GetPropertyString("time-pos"), 64)
-								songProgressSlider.SetValue(passed * 1000)
-							}
-						}
-					}()
+					so := player.Song(song)
+					setPlayedSong(so, w)
+					player.PlayNow(so)
 				},
 			})
 		}
@@ -149,11 +141,12 @@ var tabs *container.AppTabs
 
 func main() {
 	a := app.NewWithID("il.oq.qusic")
+	a.Settings().SetTheme(&myTheme{})
 	w := a.NewWindow("Qusic")
 	tabs = container.NewAppTabs(
 		container.NewTabItemWithIcon("Home", theme.HomeIcon(), homePage()),
 		container.NewTabItemWithIcon("Search", theme.SearchIcon(), searchPage(w)),
-		container.NewTabItem("Lyrics", lyricsPage()),
+		//container.NewTabItem("Lyrics", lyricsPage()),
 	)
 	tabs.OnSelected = func(ti *container.TabItem) {
 		if ti.Text == "Lyrics" {
@@ -161,6 +154,18 @@ func main() {
 			tabs.Refresh()
 		}
 	}
+
+	tick := time.NewTicker(time.Millisecond)
+	go func() {
+		for range tick.C {
+			if !player.Playing() {
+				continue
+			}
+			passed, _ := player.TimePosition(false)
+			songProgressSlider.SetValue(passed * 1000)
+		}
+	}()
+
 	tabs.SetTabLocation(container.TabLocationLeading)
 
 	border0 = container.NewBorder(nil, container.NewCenter(widget.NewRichTextFromMarkdown("# Nothing is playing...")), nil, nil, tabs)

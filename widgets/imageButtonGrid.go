@@ -1,8 +1,6 @@
 package widgets
 
 import (
-	"image/color"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -27,7 +25,6 @@ func (img *ImageButtonGrid) CreateRenderer() fyne.WidgetRenderer {
 	img.ExtendBaseWidget(img)
 	button := &RoundedButton{
 		Icon:     theme.MediaPlayIcon(),
-		Color:    color.White,
 		OnTapped: img.OnTapped,
 	}
 	img.buttonGrid = container.NewGridWithRows(5,

@@ -1,8 +1,6 @@
 package widgets
 
 import (
-	"image/color"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -14,7 +12,6 @@ import (
 type RoundedButton struct {
 	widget.DisableableWidget
 	Icon     fyne.Resource
-	Color    color.Color
 	OnTapped func()
 }
 
@@ -22,10 +19,9 @@ func (button *RoundedButton) CreateRenderer() fyne.WidgetRenderer {
 	button.ExtendBaseWidget(button)
 
 	res := theme.NewThemedResource(button.Icon)
-	res.ColorName = theme.ColorNameButton
+	res.ColorName = theme.ColorNameForeground
 
-	circle := canvas.NewCircle(button.Color)
-	circle.FillColor = button.Color
+	circle := canvas.NewCircle(theme.ButtonColor())
 
 	return widget.NewSimpleRenderer(
 		container.NewStack(circle, container.NewCenter(widget.NewIcon(res))),

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -12,9 +11,9 @@ import (
 
 func lyricsPage() fyne.CanvasObject {
 	txt := widget.NewRichText()
-	passed, _ := strconv.ParseFloat(player.GetPropertyString("time-pos"), 64)
+	passed, _ := player.TimePosition(false)
 	passedD := time.Duration(passed) * time.Second
-	for _, lyric := range currentSong.SongInfo.SyncedLyrics {
+	for _, lyric := range player.CurrentSong().SongInfo.SyncedLyrics {
 		seg := &widget.TextSegment{Text: lyric.Lyric, Style: widget.RichTextStyle{SizeName: theme.SizeNameHeadingText}}
 		if lyric.At <= passedD {
 			seg.Style.TextStyle.Bold = true

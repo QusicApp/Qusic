@@ -13,6 +13,7 @@ import (
 type SyncedLyric struct {
 	At    time.Duration
 	Lyric string
+	Index int
 }
 
 type Song struct {

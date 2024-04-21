@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"qusic/lyrics"
 	pl "qusic/player"
 	"qusic/spotify"
 	"qusic/widgets"
@@ -35,6 +36,8 @@ func homePage() fyne.CanvasObject {
 	return container.NewWithoutLayout()
 }
 
+var syncedLyrics []lyrics.SyncedLyric
+
 var searchContent = (fyne.CanvasObject)(container.NewWithoutLayout())
 
 var songProgressSlider *widget.Slider
@@ -45,6 +48,17 @@ func durString(dur time.Duration) string {
 
 func setPlayedSong(song *pl.Song, w fyne.Window) {
 	song.FetchSongInfo()
+
+	syncedLyrics = song.SongInfo.SyncedLyrics
+
+	lyricsTxt.Segments = make([]widget.RichTextSegment, len(syncedLyrics))
+	for i, lyric := range syncedLyrics {
+		var seg = new(widget.TextSegment)
+		seg.Style.SizeName = theme.SizeNameHeadingText
+		seg.Text = lyric.Lyric
+		lyricsTxt.Segments[i] = seg
+	}
+	lyricsTxt.Refresh()
 
 	image := song.Album.Images[2]
 	d, _ := http.Get(image.URL)
@@ -168,22 +182,15 @@ func main() {
 			case <-tick.C:
 				songProgressSlider.SetValue(float64(passed / time.Millisecond))
 			default:
-				syncedLyrics := player.CurrentSong().SongInfo.SyncedLyrics
-
-				if len(lyricsTxt.Segments) != len(syncedLyrics) {
-					lyricsTxt.Segments = make([]widget.RichTextSegment, len(syncedLyrics))
+				if len(syncedLyrics) == 0 {
+					continue
 				}
-
-				for i, lyric := range syncedLyrics {
-					var seg = new(widget.TextSegment)
-					seg.Style.SizeName = theme.SizeNameHeadingText
-					if lyric.At <= passed {
-						seg.Style.TextStyle.Bold = true
-					}
-					seg.Text = lyric.Lyric
-					lyricsTxt.Segments[i] = seg
+				lyric := syncedLyrics[0]
+				if lyric.At <= passed {
+					lyricsTxt.Segments[lyric.Index].(*widget.TextSegment).Style.TextStyle.Bold = true
+					lyricsTxt.Refresh()
+					syncedLyrics = syncedLyrics[1:]
 				}
-				lyricsTxt.Refresh()
 			}
 		}
 	}()

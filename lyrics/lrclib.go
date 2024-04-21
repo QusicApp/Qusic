@@ -70,6 +70,7 @@ func GetSongLRCLIB(trackName, artistName, albumName string, duration time.Durati
 		s.SyncedLyrics = append(s.SyncedLyrics, SyncedLyric{
 			At:    duration,
 			Lyric: lyric,
+			Index: len(s.SyncedLyrics),
 		})
 	}
 

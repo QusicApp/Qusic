@@ -61,12 +61,12 @@ func GetSongLRCLIB(trackName, artistName, albumName string, duration time.Durati
 		if err != nil {
 			continue
 		}
-		seconds, err := strconv.ParseFloat(sep[0], 64)
+		seconds, err := strconv.ParseFloat(sep[1], 64)
 		if err != nil {
 			continue
 		}
 
-		duration := (time.Duration(minutes) * time.Minute) + (time.Duration(seconds) * time.Second) + time.Duration(seconds*float64(time.Second))
+		duration := (time.Duration(minutes) * time.Minute) + time.Duration(seconds*float64(time.Second))
 		s.SyncedLyrics = append(s.SyncedLyrics, SyncedLyric{
 			At:    duration,
 			Lyric: lyric,

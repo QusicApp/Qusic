@@ -6,20 +6,9 @@ require (
 	fyne.io/fyne/v2 v2.4.4
 	github.com/fstanis/screenresolution v0.0.0-20190527020317-869904d15333
 	github.com/gen2brain/go-mpv v0.2.2
-	github.com/gopxl/beep v1.4.1
+	github.com/joho/godotenv v1.5.1
 	github.com/kkdai/youtube/v2 v2.10.1
 )
-
-require (
-	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
-	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/vbauerster/mpb/v5 v5.4.0 // indirect
-)
-
-//replace github.com/kerberos-io/joy4 => ./joy4
-//replace github.com/zergon321/reisen => ./reisen
 
 require (
 	fyne.io/systray v1.10.1-0.20231115130155-104f5ef7839e // indirect
@@ -27,7 +16,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204 // indirect
-	github.com/ebitengine/oto/v3 v3.1.0 // indirect
 	github.com/ebitengine/purego v0.7.1 // indirect
 	github.com/fredbi/uri v1.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -42,12 +30,8 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
-	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
-	github.com/jfreymuth/vorbis v1.0.2 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect

@@ -7,6 +7,7 @@ import (
 	"qusic/youtube"
 	"strconv"
 	"time"
+	"unsafe"
 
 	"github.com/gen2brain/go-mpv"
 )
@@ -49,9 +50,28 @@ func (p *Player) Initialize() {
 	p.player.Initialize()
 }
 
+func abs(d time.Duration) time.Duration {
+	if d < 0 {
+		return -d
+	}
+	return d
+}
+
 func (p *Player) Song(song spotify.TrackObject) *Song {
-	v, _ := youtube.Search(song.Name + " - " + song.Artists[0].Name + " - " + song.Album.Name)
-	vid := v[0]
+	v, _ := youtube.Search(song.Artists[0].Name + " - " + song.Name + " lyrics")
+
+	dur := *(*time.Duration)(unsafe.Pointer(&song.DurationMS)) * time.Millisecond
+	var vid *youtube.SearchResult
+	for _, video := range v {
+		if abs(video.Duration-dur) <= 2*time.Second {
+			vid = &video
+			break
+		}
+	}
+
+	if vid == nil {
+		vid = &v[0]
+	}
 	d, _ := vid.Data()
 	format := d.Formats.Type("audio")[0]
 
@@ -128,7 +148,7 @@ func (p *Player) Seek(absSeconds int) error {
 }
 
 func (p *Player) ClearQueue() {
-	clear(p.queue)
+	p.queue = p.queue[:0]
 }
 
 func (p *Player) PlayNow(s *Song) error {

@@ -11,7 +11,10 @@ import (
 
 type RoundedButton struct {
 	widget.DisableableWidget
-	Icon     fyne.Resource
+	Icon fyne.Resource
+
+	icon *widget.Icon
+
 	OnTapped func()
 }
 
@@ -23,9 +26,19 @@ func (button *RoundedButton) CreateRenderer() fyne.WidgetRenderer {
 
 	circle := canvas.NewCircle(theme.ButtonColor())
 
+	button.icon = widget.NewIcon(res)
+
 	return widget.NewSimpleRenderer(
-		container.NewStack(circle, container.NewCenter(widget.NewIcon(res))),
+		container.NewStack(circle, container.NewCenter(button.icon)),
 	)
+}
+
+func (button *RoundedButton) SetIcon(icon fyne.Resource) {
+	button.Icon = icon
+	res := theme.NewThemedResource(button.Icon)
+	res.ColorName = theme.ColorNameForeground
+
+	button.icon.SetResource(res)
 }
 
 func (button *RoundedButton) MinSize() fyne.Size {

@@ -17,8 +17,10 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/fstanis/screenresolution"
+	"github.com/joho/godotenv"
 )
 
+var _ = godotenv.Load()
 var id = os.Getenv("SPOTIFY_ID")
 var secret = os.Getenv("SPOTIFY_SECRET")
 
@@ -56,11 +58,10 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	pause.OnTapped = func() {
 		player.PauseCycle()
 		if player.Paused() {
-			pause.Icon = theme.MediaPlayIcon()
+			pause.SetIcon(theme.MediaPlayIcon())
 		} else {
-			pause.Icon = theme.MediaPauseIcon()
+			pause.SetIcon(theme.MediaPauseIcon())
 		}
-		pause.Refresh()
 	}
 	next := widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), nil)
 	next.Importance = widget.LowImportance
@@ -100,8 +101,14 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 func searchPage(w fyne.Window) fyne.CanvasObject {
 	searchBar := widget.NewEntry()
 	searchBar.SetPlaceHolder("What do you want to play?")
+	searchButton := widget.NewButtonWithIcon("Search", theme.SearchIcon(), func() {
+		if searchBar.Text == "" {
+			return
+		}
+		searchBar.OnSubmitted(searchBar.Text)
+	})
 
-	border := container.NewBorder(container.NewGridWithColumns(3, layout.NewSpacer(), searchBar), nil, nil, nil, searchContent)
+	border := container.NewBorder(container.NewGridWithColumns(3, layout.NewSpacer(), container.NewBorder(nil, nil, nil, searchButton, searchBar)), nil, nil, nil, searchContent)
 
 	searchBar.OnSubmitted = func(s string) {
 		res, _ := client.Search(s, spotify.QueryAll, "", nil, nil, false)
@@ -120,9 +127,11 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 				Image:          img,
 				DurationString: durString(time.Duration(song.DurationMS) * time.Millisecond),
 				OnTapped: func() {
-					so := player.Song(song)
-					setPlayedSong(so, w)
-					player.PlayNow(so)
+					go func() {
+						so := player.Song(song)
+						setPlayedSong(so, w)
+						player.PlayNow(so)
+					}()
 				},
 			})
 		}

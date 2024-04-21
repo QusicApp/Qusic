@@ -6,6 +6,7 @@ import (
 	"qusic/spotify"
 	"qusic/youtube"
 	"strconv"
+	"time"
 
 	"github.com/gen2brain/go-mpv"
 )
@@ -79,7 +80,7 @@ func (p *Player) Playing() bool {
 }
 
 // Returns the time position in seconds (or in milliseconds in if ms is true)
-func (p *Player) TimePosition(ms bool) (float64, error) {
+func (p *Player) TimePositionRaw(ms bool) (float64, error) {
 	cmd := "time-pos"
 	if ms {
 		cmd += "/full"
@@ -88,12 +89,38 @@ func (p *Player) TimePosition(ms bool) (float64, error) {
 }
 
 // Returns the time remaining in seconds (or in milliseconds in if ms is true)
-func (p *Player) TimeRemaining(ms bool) (float64, error) {
+func (p *Player) TimeRemainingRaw(ms bool) (float64, error) {
 	cmd := "time-remaining"
 	if ms {
 		cmd += "/full"
 	}
 	return strconv.ParseFloat(p.player.GetPropertyString(cmd), 64)
+}
+
+func (p *Player) TimePosition(ms bool) (time.Duration, error) {
+	d, err := p.TimePositionRaw(ms)
+	if err != nil {
+		return 0, err
+	}
+	dur := time.Duration(d)
+	if ms {
+		return dur * time.Millisecond, nil
+	} else {
+		return dur * time.Second, nil
+	}
+}
+
+func (p *Player) TimeRemaining(ms bool) (time.Duration, error) {
+	d, err := p.TimeRemainingRaw(ms)
+	if err != nil {
+		return 0, err
+	}
+	dur := time.Duration(d)
+	if ms {
+		return dur * time.Millisecond, nil
+	} else {
+		return dur * time.Second, nil
+	}
 }
 
 func (p *Player) Seek(absSeconds int) error {

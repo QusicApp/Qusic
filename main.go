@@ -155,23 +155,36 @@ func main() {
 	tabs = container.NewAppTabs(
 		container.NewTabItemWithIcon("Home", theme.HomeIcon(), homePage()),
 		container.NewTabItemWithIcon("Search", theme.SearchIcon(), searchPage(w)),
-		//container.NewTabItem("Lyrics", lyricsPage()),
+		container.NewTabItem("Lyrics", lyricsPage()),
 	)
-	tabs.OnSelected = func(ti *container.TabItem) {
-		if ti.Text == "Lyrics" {
-			ti.Content = lyricsPage()
-			tabs.Refresh()
-		}
-	}
-
 	tick := time.NewTicker(time.Millisecond)
 	go func() {
-		for range tick.C {
+		for {
 			if !player.Playing() {
 				continue
 			}
 			passed, _ := player.TimePosition(false)
-			songProgressSlider.SetValue(passed * 1000)
+			select {
+			case <-tick.C:
+				songProgressSlider.SetValue(float64(passed / time.Millisecond))
+			default:
+				syncedLyrics := player.CurrentSong().SongInfo.SyncedLyrics
+
+				if len(lyricsTxt.Segments) != len(syncedLyrics) {
+					lyricsTxt.Segments = make([]widget.RichTextSegment, len(syncedLyrics))
+				}
+
+				for i, lyric := range syncedLyrics {
+					var seg = new(widget.TextSegment)
+					seg.Style.SizeName = theme.SizeNameHeadingText
+					if lyric.At <= passed {
+						seg.Style.TextStyle.Bold = true
+					}
+					seg.Text = lyric.Lyric
+					lyricsTxt.Segments[i] = seg
+				}
+				lyricsTxt.Refresh()
+			}
 		}
 	}()
 

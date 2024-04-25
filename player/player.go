@@ -3,11 +3,11 @@ package player
 import (
 	"errors"
 	"fmt"
-	"qusic/spotify"
 	"qusic/youtube"
 	"strconv"
 	"time"
-	"unsafe"
+
+	yt "github.com/kkdai/youtube/v2"
 
 	"github.com/gen2brain/go-mpv"
 )
@@ -15,12 +15,12 @@ import (
 var ErrNotFoundSong = errors.New("not found song")
 
 type Song struct {
-	spotify.TrackObject
-	URL string
+	youtube.MusicSearchResult
+	Video *yt.Video
+	URL   string
 }
 
 type Player struct {
-	client *spotify.Client
 	player *mpv.Mpv
 	queue  []*Song
 
@@ -30,9 +30,8 @@ type Player struct {
 	NowPlaying chan *Song
 }
 
-func New(client *spotify.Client) *Player {
+func New() *Player {
 	return &Player{
-		client: client,
 		player: mpv.New(),
 		queue:  make([]*Song, 0),
 
@@ -57,10 +56,10 @@ func abs(d time.Duration) time.Duration {
 	return d
 }
 
-func (p *Player) Song(song spotify.TrackObject) *Song {
-	v, _ := youtube.Search(song.Artists[0].Name + " - " + song.Name + " lyrics")
+/*func (p *Player) FromSpotifySong(s spotify.TrackObject) Song {
+	v, _ := youtube.Search(s.Artists[0].Name + " - " + s.Name)
 
-	dur := *(*time.Duration)(unsafe.Pointer(&song.DurationMS)) * time.Millisecond
+	dur := *(*time.Duration)(unsafe.Pointer(&s.DurationMS)) * time.Millisecond
 	var vid *youtube.SearchResult
 	for _, video := range v {
 		if abs(video.Duration-dur) <= 2*time.Second {
@@ -72,10 +71,19 @@ func (p *Player) Song(song spotify.TrackObject) *Song {
 	if vid == nil {
 		vid = &v[0]
 	}
+
+	fmt.Println(vid.Title, vid.ID)
 	d, _ := vid.Data()
 	format := d.Formats.Type("audio")[0]
 
-	return &Song{song, format.URL}
+	return &song[spotify.TrackObject]{s, format.URL} //Song{song, format.URL}
+}*/
+
+func (p *Player) Song(s youtube.MusicSearchResult) *Song {
+	d, _ := s.Data()
+	format := d.Formats.Type("audio")[0]
+
+	return &Song{s, d, format.URL}
 }
 
 func (p *Player) AddToQueue(song *Song) {

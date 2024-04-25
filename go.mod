@@ -6,7 +6,6 @@ require (
 	fyne.io/fyne/v2 v2.4.4
 	github.com/fstanis/screenresolution v0.0.0-20190527020317-869904d15333
 	github.com/gen2brain/go-mpv v0.2.2
-	github.com/joho/godotenv v1.5.1
 	github.com/kkdai/youtube/v2 v2.10.1
 )
 

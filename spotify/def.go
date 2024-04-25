@@ -2,7 +2,6 @@ package spotify
 
 import (
 	"qusic/lyrics"
-	"time"
 )
 
 type QueryType string
@@ -376,7 +375,7 @@ type TrackObject struct {
 }
 
 func (o *TrackObject) FetchSongInfo() (err error) {
-	o.SongInfo, err = lyrics.GetSongLRCLIB(o.Name, o.Artists[0].Name, o.Album.Name, time.Duration(o.DurationMS)*time.Millisecond, false)
+	o.SongInfo, err = lyrics.SearchSongLRCLIB(o.Name, o.Artists[0].Name, o.Album.Name)
 	return
 }
 

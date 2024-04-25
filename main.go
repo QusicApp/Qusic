@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"qusic/lyrics"
 	pl "qusic/player"
-	"qusic/spotify"
 	"qusic/widgets"
+	"qusic/youtube"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -18,15 +17,14 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/fstanis/screenresolution"
-	"github.com/joho/godotenv"
 )
 
-var _ = godotenv.Load()
-var id = os.Getenv("SPOTIFY_ID")
-var secret = os.Getenv("SPOTIFY_SECRET")
+//var _ = godotenv.Load()
+//var id = os.Getenv("SPOTIFY_ID")
+//var secret = os.Getenv("SPOTIFY_SECRET")
 
-var client = spotify.New(id, secret)
-var player = pl.New(client)
+var client = new(youtube.MusicClient)
+var player = pl.New()
 
 func init() {
 	player.Initialize()
@@ -56,13 +54,14 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 		var seg = new(widget.TextSegment)
 		seg.Style.SizeName = theme.SizeNameHeadingText
 		seg.Text = lyric.Lyric
+		seg.Style.TextStyle.Bold = false
 		lyricsTxt.Segments[i] = seg
 	}
 	lyricsTxt.Refresh()
 
-	image := song.Album.Images[2]
+	image := song.Thumbnails[0]
 	d, _ := http.Get(image.URL)
-	img := canvas.NewImageFromReader(d.Body, song.Name)
+	img := canvas.NewImageFromReader(d.Body, song.Title)
 
 	back := widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), nil)
 	back.Importance = widget.LowImportance
@@ -80,11 +79,9 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	next := widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), nil)
 	next.Importance = widget.LowImportance
 
-	songProgressSlider = widget.NewSlider(0, float64(song.DurationMS))
+	songProgressSlider = widget.NewSlider(0, float64(song.Duration/time.Millisecond))
 
-	full := time.Millisecond * time.Duration(song.DurationMS)
-
-	p, f := widget.NewLabel("00:00"), widget.NewLabel(durString(full))
+	p, f := widget.NewLabel("00:00"), widget.NewLabel(durString(song.Duration))
 	prevf := 0.0
 
 	songProgressSlider.OnChanged = func(f float64) {
@@ -98,8 +95,8 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	}
 
 	songinfo := &widgets.SongInfo{
-		Name:   song.Name,
-		Artist: song.Artists[0].Name,
+		Name:   song.Title,
+		Artist: song.Author,
 		Image:  img,
 	}
 
@@ -125,21 +122,21 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 	border := container.NewBorder(container.NewGridWithColumns(3, layout.NewSpacer(), container.NewBorder(nil, nil, nil, searchButton, searchBar)), nil, nil, nil, searchContent)
 
 	searchBar.OnSubmitted = func(s string) {
-		res, _ := client.Search(s, spotify.QueryAll, "", nil, nil, false)
+		res, _ := client.SearchSongs(s)
 		form := container.NewVBox(widget.NewRichTextFromMarkdown("# Songs"))
 		songsc := container.NewVBox()
 
-		for _, s := range res.Tracks.Items {
+		for _, s := range res {
 			song := s
-			image := song.Album.Images[1]
+			image := song.Thumbnails[0]
 			d, _ := http.Get(image.URL)
-			img := canvas.NewImageFromReader(d.Body, song.Name)
+			img := canvas.NewImageFromReader(d.Body, song.Title)
 			img.SetMinSize(fyne.NewSize(48, 48))
 			songsc.Add(&widgets.SongResult{
-				Name:           song.Name,
-				Artist:         song.Artists[0].Name,
+				Name:           song.Title,
+				Artist:         song.Author,
 				Image:          img,
-				DurationString: durString(time.Duration(song.DurationMS) * time.Millisecond),
+				DurationString: durString(song.Duration),
 				OnTapped: func() {
 					go func() {
 						so := player.Song(song)

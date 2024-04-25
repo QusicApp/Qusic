@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-// Didn't feel like using API
-
 type SyncedLyric struct {
 	At    time.Duration
 	Lyric string

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	discordrpc "qusic/discord-rpc"
 	"qusic/lyrics"
 	pl "qusic/player"
 	"qusic/widgets"
@@ -170,8 +171,10 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 
 var border0 *fyne.Container
 var tabs *container.AppTabs
+var rpc = discordrpc.Client{ClientID: "1233164951342813275"}
 
 func main() {
+	rpc.Connect()
 	a := app.NewWithID("il.oq.qusic")
 	a.Settings().SetTheme(&myTheme{})
 	w := a.NewWindow("Qusic")
@@ -189,6 +192,16 @@ func main() {
 			passed, _ := player.TimePosition(false)
 			select {
 			case <-tick.C:
+				cs := player.CurrentSong()
+				rpc.SetActivity(discordrpc.Activity{
+					Type:    discordrpc.Listening,
+					Details: cs.Title,
+					State:   "By " + cs.Author.Name,
+					Timestamps: discordrpc.ActivityTimestamps{
+						Start: int(time.Now().UnixMilli()) - int(passed/time.Millisecond),
+						End:   int(time.Now().UnixMilli()) + int(cs.Duration/time.Millisecond) - int(passed/time.Millisecond),
+					},
+				})
 				songProgressSlider.SetValue(float64(passed / time.Millisecond))
 			default:
 				if len(syncedLyrics) == 0 {

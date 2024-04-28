@@ -54,7 +54,7 @@ type ActivityTimestamps struct {
 type ActivityType int
 
 const (
-	Game ActivityType = 0
+	Game ActivityType = iota
 	Streaming
 	Listening
 	Watching

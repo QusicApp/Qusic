@@ -96,7 +96,7 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 	songinfo := &widgets.SongInfo{
 		Name:   song.Title,
-		Artist: song.Author,
+		Artist: song.Author.Name,
 		Image:  img,
 	}
 
@@ -122,33 +122,45 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 	border := container.NewBorder(container.NewGridWithColumns(3, layout.NewSpacer(), container.NewBorder(nil, nil, nil, searchButton, searchBar)), nil, nil, nil, searchContent)
 
 	searchBar.OnSubmitted = func(s string) {
-		res, _ := client.SearchSongs(s)
-		form := container.NewVBox(widget.NewRichTextFromMarkdown("# Songs"))
-		songsc := container.NewVBox()
+		songs, _ := client.SearchSongs(s)
+		videos, _ := client.SearchVideos(s)
 
-		for _, s := range res {
-			song := s
-			image := song.Thumbnails[0]
-			d, _ := http.Get(image.URL)
-			img := canvas.NewImageFromReader(d.Body, song.Title)
-			img.SetMinSize(fyne.NewSize(48, 48))
-			songsc.Add(&widgets.SongResult{
-				Name:           song.Title,
-				Artist:         song.Author,
-				Image:          img,
-				DurationString: durString(song.Duration),
-				OnTapped: func() {
-					go func() {
-						so := player.Song(song)
-						setPlayedSong(so, w)
-						player.PlayNow(so)
-					}()
-				},
-			})
+		results := [2][]youtube.MusicSearchResult{songs, videos}
+		var forms [2]*fyne.Container
+
+		for i, res := range results {
+			txt := "Songs"
+			if i == 1 {
+				txt = "Videos"
+			}
+			form := container.NewVBox(widget.NewRichTextFromMarkdown("# " + txt))
+			songsc := container.NewVBox()
+
+			for _, s := range res {
+				song := s
+				image := song.Thumbnails[0]
+				d, _ := http.Get(image.URL)
+				img := canvas.NewImageFromReader(d.Body, song.Title)
+				img.SetMinSize(fyne.NewSize(48, 48))
+				songsc.Add(&widgets.SongResult{
+					Name:           song.Title,
+					Artist:         song.Author.Name,
+					Image:          img,
+					DurationString: durString(song.Duration),
+					OnTapped: func() {
+						go func() {
+							so := player.Song(song)
+							setPlayedSong(so, w)
+							player.PlayNow(so)
+						}()
+					},
+				})
+			}
+			form.Add(songsc)
+			forms[i] = form
 		}
-		form.Add(songsc)
 
-		grid := container.NewGridWithColumns(2, layout.NewSpacer(), container.NewScroll(form))
+		grid := container.NewGridWithColumns(2, container.NewVScroll(forms[0]), container.NewVScroll(forms[1]))
 		searchContent = grid
 		border.Objects[0] = searchContent
 		border.Refresh()

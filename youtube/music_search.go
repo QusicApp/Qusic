@@ -13,14 +13,21 @@ import (
 	"github.com/kkdai/youtube/v2"
 )
 
+type author struct {
+	ID, Name string
+}
+
 type MusicSearchResult struct {
 	Thumbnails []struct {
 		URL    string `json:"url"`
 		Width  int    `json:"width"`
 		Height int    `json:"height"`
 	}
-	ID, Title, Author, Album string
-	Duration                 time.Duration
+	ID, Title, Album string
+	Author           author
+	Duration         time.Duration
+
+	PlaysViews int
 
 	SongInfo lyrics.Song `json:"-"`
 }
@@ -30,7 +37,7 @@ func (s *MusicSearchResult) Data() (*youtube.Video, error) {
 }
 
 func (o *MusicSearchResult) FetchSongInfo() (err error) {
-	o.SongInfo, err = lyrics.SearchSongLRCLIB(o.Title, o.Author, o.Album)
+	o.SongInfo, err = lyrics.GetSongLRCLIB(o.Title, o.Author.Name, o.Album, o.Duration, false)
 	return
 }
 
@@ -66,12 +73,24 @@ type musicThumbnailRenderer struct {
 type runs struct {
 	Runs []struct {
 		Text               string `json:"text"`
-		NavigationEndpoint struct {
+		NavigationEndpoint *struct {
+			BrowseEndpoint struct {
+				BrowseID string `json:"browseId"`
+			} `json:"browseEndpoint"`
 			WatchEndpoint struct {
 				VideoID string `json:"videoId"`
 			} `json:"watchEndpoint"`
 		} `json:"navigationEndpoint"`
 	} `json:"runs"`
+}
+
+func (r runs) Author() author {
+	for _, run := range r.Runs {
+		if run.NavigationEndpoint != nil {
+			return author{Name: run.Text, ID: run.NavigationEndpoint.BrowseEndpoint.BrowseID}
+		}
+	}
+	return author{}
 }
 
 type musicSearchResponse struct {
@@ -82,13 +101,6 @@ type musicSearchResponse struct {
 					Content struct {
 						SectionListRenderer struct {
 							Contents []struct {
-								MusicCardShelfRenderer struct {
-									Thumbnail struct {
-										MusicThumbnailRenderer musicThumbnailRenderer `json:"musicThumbnailRenderer"`
-									} `json:"thumbnail"`
-
-									Title runs `json:"title"`
-								} `json:"musicCardShelfRenderer"`
 								MusicShelfRenderer struct {
 									Title    runs `json:"title"`
 									Contents []struct {
@@ -127,20 +139,21 @@ func jsonBody(d any) io.Reader {
 type MusicClient struct {
 }
 
-func (m MusicClient) SearchSongs(query string) ([]MusicSearchResult, error) {
-	res, err := m.search(query, "Eg-KAQwIARAAGAAgACgAMABqChAEEAMQCRAFEAo%3D")
+const (
+	ParamSongsOnly  = "Eg-KAQwIARAAGAAgACgAMABqChAEEAMQCRAFEAo%3D"
+	ParamVideosOnly = "Eg-KAQwIABABGAAgACgAMABqChAEEAMQCRAFEAo%3D"
+)
+
+func (m MusicClient) SearchVideos(query string) ([]MusicSearchResult, error) {
+	res, err := m.search(query, ParamVideosOnly)
 	if err != nil {
 		return nil, err
 	}
-	var results = make([]MusicSearchResult, len(res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[0].MusicShelfRenderer.Contents))
+	var results []MusicSearchResult
 
-	for i, song := range res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[0].MusicShelfRenderer.Contents {
-		results[i] = MusicSearchResult{
-			Title:      song.MusicResponsiveListItemRenderer.FlexColumns[0].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[0].Text,
-			ID:         song.MusicResponsiveListItemRenderer.PlaylistItemData.VideoID,
-			Thumbnails: song.MusicResponsiveListItemRenderer.Thumbnail.MusicThumbnailRenderer.Thumbnail.Thumbnails,
-			Author:     song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[0].Text,
-			Album:      song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[2].Text,
+	for _, song := range res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[0].MusicShelfRenderer.Contents {
+		if len(song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs) != 5 {
+			continue
 		}
 		dur := song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[4].Text
 
@@ -160,7 +173,52 @@ func (m MusicClient) SearchSongs(query string) ([]MusicSearchResult, error) {
 
 		duration := (time.Duration(hours) * time.Hour) + (time.Duration(minutes) * time.Minute) + (time.Duration(seconds) * time.Second)
 
-		results[i].Duration = duration
+		results = append(results, MusicSearchResult{
+			Title:      song.MusicResponsiveListItemRenderer.FlexColumns[0].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[0].Text,
+			ID:         song.MusicResponsiveListItemRenderer.PlaylistItemData.VideoID,
+			Thumbnails: song.MusicResponsiveListItemRenderer.Thumbnail.MusicThumbnailRenderer.Thumbnail.Thumbnails,
+			Author:     song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Author(),
+			Duration:   duration,
+		})
+	}
+
+	return results, nil
+}
+
+func (m MusicClient) SearchSongs(query string) ([]MusicSearchResult, error) {
+	res, err := m.search(query, ParamSongsOnly)
+	if err != nil {
+		return nil, err
+	}
+	var results = make([]MusicSearchResult, len(res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[0].MusicShelfRenderer.Contents))
+
+	for i, song := range res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[0].MusicShelfRenderer.Contents {
+		dur := song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[4].Text
+
+		sep := strings.Split(dur, ":")
+		var (
+			hours, minutes, seconds int64
+		)
+		switch len(sep) {
+		case 3:
+			hours, _ = strconv.ParseInt(sep[0], 10, 64)
+			minutes, _ = strconv.ParseInt(sep[1], 10, 64)
+			seconds, _ = strconv.ParseInt(sep[2], 10, 64)
+		case 2:
+			minutes, _ = strconv.ParseInt(sep[0], 10, 64)
+			seconds, _ = strconv.ParseInt(sep[1], 10, 64)
+		}
+
+		duration := (time.Duration(hours) * time.Hour) + (time.Duration(minutes) * time.Minute) + (time.Duration(seconds) * time.Second)
+
+		results[i] = MusicSearchResult{
+			Title:      song.MusicResponsiveListItemRenderer.FlexColumns[0].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[0].Text,
+			ID:         song.MusicResponsiveListItemRenderer.PlaylistItemData.VideoID,
+			Thumbnails: song.MusicResponsiveListItemRenderer.Thumbnail.MusicThumbnailRenderer.Thumbnail.Thumbnails,
+			Author:     song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Author(),
+			Album:      song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[2].Text,
+			Duration:   duration,
+		}
 	}
 
 	return results, nil

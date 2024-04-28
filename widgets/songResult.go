@@ -4,7 +4,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -21,22 +20,26 @@ func (card *SongResult) CreateRenderer() fyne.WidgetRenderer {
 
 	card.Image.FillMode = canvas.ImageFillContain
 
-	c := container.NewHBox(
+	text := widget.NewRichText(
+		&widget.TextSegment{
+			Text:  card.Name,
+			Style: widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}},
+		},
+		&widget.TextSegment{
+			Text:  card.Artist,
+			Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
+		},
+	)
+	text.Truncation = fyne.TextTruncateEllipsis
+
+	c := container.NewBorder(
+		nil,
+		nil,
 		&ImageButton{Image: card.Image, OnTapped: card.OnTapped},
-		widget.NewRichText(
-			&widget.TextSegment{
-				Text:  card.Name,
-				Style: widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}},
-			},
-			&widget.TextSegment{
-				Text:  card.Artist,
-				Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
-			},
-		),
-		layout.NewSpacer(),
 		widget.NewLabelWithStyle(card.DurationString, fyne.TextAlignTrailing, fyne.TextStyle{
 			Monospace: true,
 		}),
+		text,
 	)
 
 	return widget.NewSimpleRenderer(c)

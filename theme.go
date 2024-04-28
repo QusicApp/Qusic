@@ -20,7 +20,19 @@ func (m myTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 }
 
 func (m myTheme) Font(style fyne.TextStyle) fyne.Resource {
-	return theme.DefaultTheme().Font(style)
+	if style.Monospace {
+		return theme.DefaultTheme().Font(style)
+	}
+	if style.Bold {
+		if style.Italic {
+			return resourceRobotoBoldItalicTtf
+		}
+		return resourceRobotoBoldTtf
+	}
+	if style.Italic {
+		return resourceRobotoItalicTtf
+	}
+	return resourceRobotoRegularTtf
 }
 
 func (m myTheme) Size(name fyne.ThemeSizeName) float32 {

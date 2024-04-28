@@ -42,7 +42,7 @@ var searchContent = (fyne.CanvasObject)(container.NewWithoutLayout())
 var songProgressSlider *widget.Slider
 
 func durString(dur time.Duration) string {
-	return fmt.Sprintf("%02d:%02d", int(dur.Minutes())%60, int(dur.Seconds())%60)
+	return fmt.Sprintf("%0d:%02d", int(dur.Minutes())%60, int(dur.Seconds())%60)
 }
 
 func setPlayedSong(song *pl.Song, w fyne.Window) {
@@ -127,9 +127,14 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 		videos, _ := client.SearchVideos(s)
 
 		results := [2][]youtube.MusicSearchResult{songs, videos}
-		var forms [2]*fyne.Container
+		var forms = [2]fyne.CanvasObject{
+			layout.NewSpacer(), layout.NewSpacer(),
+		}
 
 		for i, res := range results {
+			if len(res) == 0 {
+				continue
+			}
 			txt := "Songs"
 			if i == 1 {
 				txt = "Videos"
@@ -219,7 +224,27 @@ func main() {
 
 	tabs.SetTabLocation(container.TabLocationLeading)
 
-	border0 = container.NewBorder(nil, container.NewCenter(widget.NewRichTextFromMarkdown("# Nothing is playing...")), nil, nil, tabs)
+	back := &widget.Button{Icon: theme.MediaSkipPreviousIcon(), Importance: widget.LowImportance}
+	back.Disable()
+
+	pause := &widgets.RoundedButton{
+		Icon: theme.MediaPauseIcon(),
+	}
+	pause.Disable()
+	next := &widget.Button{Icon: theme.MediaSkipNextIcon(), Importance: widget.LowImportance}
+	next.Disable()
+
+	s := widget.NewSlider(0, 0)
+	s.Disable()
+
+	progress := container.NewBorder(nil, nil,
+		widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}),
+		widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}),
+		s)
+	control := container.NewGridWithRows(2, container.NewHBox(layout.NewSpacer(), back, pause, next, layout.NewSpacer()), progress)
+	grid := container.NewGridWithColumns(3, layout.NewSpacer(), control)
+
+	border0 = container.NewBorder(nil, grid, nil, nil, tabs)
 	w.SetContent(border0)
 	resolution := screenresolution.GetPrimary()
 	w.Resize(fyne.NewSize(float32(resolution.Width), float32(resolution.Height)))

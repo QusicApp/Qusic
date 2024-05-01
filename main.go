@@ -15,6 +15,7 @@ import (
 	a "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -179,17 +180,23 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 func main() {
 	logger.Info("Qusic [ made by oq ]")
 
+	app.SetIcon(resourceQusicPng)
+	var window fyne.Window
+
 	app.Lifecycle().SetOnStarted(func() {
 		logger.Inf("Connecting to Discord RPC: ")
 		fmt.Println(rpc.Connect())
 
 		logger.Info("Launching app")
 		apprunning = true
-		w := app.NewWindow("Qusic")
+		window = app.NewWindow("Qusic")
+		window.SetCloseIntercept(func() {
+			window.Hide()
+		})
 
 		tabs = container.NewAppTabs(
 			container.NewTabItemWithIcon("Home", theme.HomeIcon(), homePage()),
-			container.NewTabItemWithIcon("Search", theme.SearchIcon(), searchPage(w)),
+			container.NewTabItemWithIcon("Search", theme.SearchIcon(), searchPage(window)),
 			container.NewTabItem("Lyrics", lyricsPage()),
 		)
 
@@ -214,7 +221,7 @@ func main() {
 		next.Disable()
 
 		settingsButton = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
-			settings(w)
+			settings(window)
 		})
 		settingsButton.Importance = widget.LowImportance
 
@@ -242,10 +249,10 @@ func main() {
 
 		bottom = container.NewGridWithColumns(3, layout.NewSpacer(), control)
 
-		w.SetContent(container.NewBorder(nil, bottom, nil, container.NewVBox(settingsButton), tabs))
+		window.SetContent(container.NewBorder(nil, bottom, nil, container.NewVBox(settingsButton), tabs))
 		resolution := screenresolution.GetPrimary()
-		w.Resize(fyne.NewSize(float32(resolution.Width)/1.5, float32(resolution.Height)/1.5))
-		w.Show()
+		window.Resize(fyne.NewSize(float32(resolution.Width)/1.5, float32(resolution.Height)/1.5))
+		window.Show()
 
 		tick := time.NewTicker(time.Millisecond)
 		for {
@@ -288,6 +295,12 @@ func main() {
 			}
 		}
 	})
+
+	if desk, ok := app.(desktop.App); ok {
+		desk.SetSystemTrayMenu(fyne.NewMenu("Qusic", fyne.NewMenuItem("Show", func() {
+			window.Show()
+		})))
+	}
 
 	app.Run()
 }

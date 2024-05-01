@@ -81,7 +81,6 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 		lyricsTxt.Segments[i] = seg
 	}
 	lyricsTxt.Refresh()
-	lyricsScroll.ScrollToTop()
 
 	image := song.Thumbnails[0]
 	d, _ := http.Get(image.URL)
@@ -286,7 +285,9 @@ func main() {
 					lyricsTxt.Refresh()
 					syncedLyrics = syncedLyrics[1:]
 
-					if lyric.Index != 0 {
+					if lyric.Index == 0 {
+						lyricsScroll.ScrollToTop()
+					} else {
 						lyricsScroll.Scrolled(&fyne.ScrollEvent{
 							Scrolled: fyne.NewDelta(0, -30),
 						})

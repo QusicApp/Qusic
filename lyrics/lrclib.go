@@ -11,14 +11,14 @@ import (
 )
 
 type songData struct {
-	ID           int           `json:"id"`
-	TrackName    string        `json:"trackName"`
-	ArtistName   string        `json:"artistName"`
-	AlbumName    string        `json:"albumName"`
-	Duration     time.Duration `json:"duration"`
-	Instrumental bool          `json:"instrumental"`
-	PlainLyrics  string        `json:"plainLyrics"`
-	SyncedLyrics string        `json:"syncedLyrics"`
+	ID           int     `json:"id"`
+	TrackName    string  `json:"trackName"`
+	ArtistName   string  `json:"artistName"`
+	AlbumName    string  `json:"albumName"`
+	Duration     float64 `json:"duration"`
+	Instrumental bool    `json:"instrumental"`
+	PlainLyrics  string  `json:"plainLyrics"`
+	SyncedLyrics string  `json:"syncedLyrics"`
 }
 
 func parseSyncedLyrics(str string) []SyncedLyric {

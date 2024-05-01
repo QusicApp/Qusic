@@ -1,23 +1,46 @@
 package player
 
 import (
-	"errors"
 	"fmt"
+	"qusic/lyrics"
+	"qusic/spotify"
 	"qusic/youtube"
 	"strconv"
 	"time"
+	"unsafe"
 
 	yt "github.com/kkdai/youtube/v2"
 
 	"github.com/gen2brain/go-mpv"
 )
 
-var ErrNotFoundSong = errors.New("not found song")
+type Artist struct {
+	Name, URL, ID string
+}
+
+type Thumbnail struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+}
 
 type Song struct {
-	youtube.MusicSearchResult
-	Video *yt.Video
-	URL   string
+	Video     *yt.Video
+	StreamURL string
+
+	Lyrics lyrics.Song
+
+	Name, AlbumName, URL string
+	Artists              []Artist
+	Thumbnails           []Thumbnail
+
+	Duration time.Duration
+	Plays    int
+}
+
+func (o *Song) FetchSongInfo() (err error) {
+	o.Lyrics, err = lyrics.GetSongLRCLIB(o.Name, o.Artists[0].Name, o.AlbumName, o.Duration, false)
+	return
 }
 
 type Player struct {
@@ -26,16 +49,12 @@ type Player struct {
 
 	paused      bool
 	currentSong int
-
-	NowPlaying chan *Song
 }
 
 func New() *Player {
 	return &Player{
 		player: mpv.New(),
 		queue:  make([]*Song, 0),
-
-		NowPlaying: make(chan *Song),
 	}
 }
 
@@ -56,11 +75,11 @@ func abs(d time.Duration) time.Duration {
 	return d
 }
 
-/*func (p *Player) FromSpotifySong(s spotify.TrackObject) Song {
-	v, _ := youtube.Search(s.Artists[0].Name + " - " + s.Name)
+func (p *Player) SpotifySong(s spotify.TrackObject) Song {
+	v, _ := (*youtube.MusicClient).SearchSongs(nil, s.Artists[0].Name+" - "+s.Name)
 
 	dur := *(*time.Duration)(unsafe.Pointer(&s.DurationMS)) * time.Millisecond
-	var vid *youtube.SearchResult
+	var vid *youtube.MusicSearchResult
 	for _, video := range v {
 		if abs(video.Duration-dur) <= 2*time.Second {
 			vid = &video
@@ -72,18 +91,57 @@ func abs(d time.Duration) time.Duration {
 		vid = &v[0]
 	}
 
-	fmt.Println(vid.Title, vid.ID)
 	d, _ := vid.Data()
 	format := d.Formats.Type("audio")[0]
 
-	return &song[spotify.TrackObject]{s, format.URL} //Song{song, format.URL}
-}*/
+	var artists = make([]Artist, len(s.Artists))
+	for i, artist := range s.Artists {
+		artists[i] = Artist{
+			Name: artist.Name,
+			ID:   artist.ID,
+			URL:  artist.ExternalURLs.Spotify,
+		}
+	}
 
-func (p *Player) Song(s youtube.MusicSearchResult) *Song {
+	return Song{
+		Video: d, StreamURL: format.URL,
+
+		Name:      s.Name,
+		Artists:   artists,
+		AlbumName: s.Album.Name,
+
+		Duration: dur,
+		URL:      s.ExternalURLs.Spotify,
+
+		Thumbnails: *(*[]Thumbnail)(unsafe.Pointer(&s.Album.Images)),
+	}
+}
+
+func (p *Player) YoutubeMusicSong(s youtube.MusicSearchResult) *Song {
 	d, _ := s.Data()
 	format := d.Formats.Type("audio")[0]
 
-	return &Song{s, d, format.URL}
+	var artists = make([]Artist, len(s.Authors))
+	for i, artist := range s.Authors {
+		artists[i] = Artist{
+			Name: artist.Name,
+			ID:   artist.ID,
+			URL:  fmt.Sprintf("https://www.youtube.com/channel/%s", artist.ID),
+		}
+	}
+
+	return &Song{
+		Video: d, StreamURL: format.URL,
+
+		Name:       s.Title,
+		URL:        fmt.Sprintf("https://youtu.be/%s", s.VideoID),
+		Artists:    artists,
+		AlbumName:  s.Album,
+		Thumbnails: *(*[]Thumbnail)(unsafe.Pointer(&s.Thumbnails)),
+
+		Duration: s.Duration,
+		Plays:    s.PlaysViews,
+	}
 }
 
 func (p *Player) AddToQueue(song *Song) {
@@ -175,11 +233,10 @@ func (p *Player) Play(i int) error {
 		return nil
 	}
 
-	if err := p.player.Command([]string{"loadfile", p.queue[i].URL}); err != nil {
+	if err := p.player.Command([]string{"loadfile", p.queue[i].StreamURL}); err != nil {
 		return err
 	}
 
-	p.NowPlaying <- p.queue[i]
 	p.currentSong = i
 	return nil
 }

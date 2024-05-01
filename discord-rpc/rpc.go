@@ -109,6 +109,9 @@ func (c *Client) handshake() (string, error) {
 }
 
 func (c *Client) sendCommand(op int, command Command) (string, error) {
+	if c.conn == nil {
+		return "", fmt.Errorf("not connected")
+	}
 	return c.Send(op, command.json())
 }
 

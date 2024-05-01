@@ -7,9 +7,12 @@ import (
 )
 
 var lyricsTxt *widget.RichText
+var lyricsScroll *container.Scroll
 
 func lyricsPage() fyne.CanvasObject {
 	lyricsTxt = widget.NewRichText()
 	lyricsTxt.Wrapping = fyne.TextWrapBreak
-	return container.NewVScroll(lyricsTxt)
+
+	lyricsScroll = container.NewVScroll(lyricsTxt)
+	return lyricsScroll
 }

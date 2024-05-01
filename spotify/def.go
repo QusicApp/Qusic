@@ -1,9 +1,5 @@
 package spotify
 
-import (
-	"qusic/lyrics"
-)
-
 type QueryType string
 
 const (
@@ -370,13 +366,6 @@ type TrackObject struct {
 	TrackNumber int    `json:"track_number"`
 	URI         string `json:"uri"`
 	IsLocal     bool   `json:"is_local"`
-
-	SongInfo lyrics.Song `json:"-"`
-}
-
-func (o *TrackObject) FetchSongInfo() (err error) {
-	o.SongInfo, err = lyrics.SearchSongLRCLIB(o.Name, o.Artists[0].Name, o.Album.Name)
-	return
 }
 
 type SimplifiedPlaylistObject struct {

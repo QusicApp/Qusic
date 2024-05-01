@@ -13,7 +13,7 @@ import (
 	"github.com/kkdai/youtube/v2"
 )
 
-type author struct {
+type Author struct {
 	ID, Name string
 }
 
@@ -23,9 +23,9 @@ type MusicSearchResult struct {
 		Width  int    `json:"width"`
 		Height int    `json:"height"`
 	}
-	ID, Title, Album string
-	Author           author
-	Duration         time.Duration
+	VideoID, Title, Album string
+	Authors               []Author
+	Duration              time.Duration
 
 	PlaysViews int
 
@@ -33,12 +33,7 @@ type MusicSearchResult struct {
 }
 
 func (s *MusicSearchResult) Data() (*youtube.Video, error) {
-	return Client.GetVideo(s.ID)
-}
-
-func (o *MusicSearchResult) FetchSongInfo() (err error) {
-	o.SongInfo, err = lyrics.GetSongLRCLIB(o.Title, o.Author.Name, o.Album, o.Duration, false)
-	return
+	return Client.GetVideo(s.VideoID)
 }
 
 type musicSearchRequest struct {
@@ -84,13 +79,13 @@ type runs struct {
 	} `json:"runs"`
 }
 
-func (r runs) Author() author {
+func (r runs) Author() []Author {
 	for _, run := range r.Runs {
 		if run.NavigationEndpoint != nil {
-			return author{Name: run.Text, ID: run.NavigationEndpoint.BrowseEndpoint.BrowseID}
+			return []Author{{Name: run.Text, ID: run.NavigationEndpoint.BrowseEndpoint.BrowseID}}
 		}
 	}
-	return author{}
+	return []Author{}
 }
 
 type musicSearchResponse struct {
@@ -136,15 +131,14 @@ func jsonBody(d any) io.Reader {
 	return buf
 }
 
-type MusicClient struct {
-}
+type MusicClient struct{}
 
 const (
 	ParamSongsOnly  = "Eg-KAQwIARAAGAAgACgAMABqChAEEAMQCRAFEAo%3D"
 	ParamVideosOnly = "Eg-KAQwIABABGAAgACgAMABqChAEEAMQCRAFEAo%3D"
 )
 
-func (m MusicClient) SearchVideos(query string) ([]MusicSearchResult, error) {
+func (m *MusicClient) SearchVideos(query string) ([]MusicSearchResult, error) {
 	res, err := m.search(query, ParamVideosOnly)
 	if err != nil {
 		return nil, err
@@ -175,9 +169,9 @@ func (m MusicClient) SearchVideos(query string) ([]MusicSearchResult, error) {
 
 		results = append(results, MusicSearchResult{
 			Title:      song.MusicResponsiveListItemRenderer.FlexColumns[0].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[0].Text,
-			ID:         song.MusicResponsiveListItemRenderer.PlaylistItemData.VideoID,
+			VideoID:    song.MusicResponsiveListItemRenderer.PlaylistItemData.VideoID,
 			Thumbnails: song.MusicResponsiveListItemRenderer.Thumbnail.MusicThumbnailRenderer.Thumbnail.Thumbnails,
-			Author:     song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Author(),
+			Authors:    song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Author(),
 			Duration:   duration,
 		})
 	}
@@ -185,7 +179,7 @@ func (m MusicClient) SearchVideos(query string) ([]MusicSearchResult, error) {
 	return results, nil
 }
 
-func (m MusicClient) SearchSongs(query string) ([]MusicSearchResult, error) {
+func (m *MusicClient) SearchSongs(query string) ([]MusicSearchResult, error) {
 	res, err := m.search(query, ParamSongsOnly)
 	if err != nil {
 		return nil, err
@@ -213,9 +207,9 @@ func (m MusicClient) SearchSongs(query string) ([]MusicSearchResult, error) {
 
 		results[i] = MusicSearchResult{
 			Title:      song.MusicResponsiveListItemRenderer.FlexColumns[0].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[0].Text,
-			ID:         song.MusicResponsiveListItemRenderer.PlaylistItemData.VideoID,
+			VideoID:    song.MusicResponsiveListItemRenderer.PlaylistItemData.VideoID,
 			Thumbnails: song.MusicResponsiveListItemRenderer.Thumbnail.MusicThumbnailRenderer.Thumbnail.Thumbnails,
-			Author:     song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Author(),
+			Authors:    song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Author(),
 			Album:      song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[2].Text,
 			Duration:   duration,
 		}
@@ -224,7 +218,7 @@ func (m MusicClient) SearchSongs(query string) ([]MusicSearchResult, error) {
 	return results, nil
 }
 
-func (MusicClient) search(query, params string) (musicSearchResponse, error) {
+func (*MusicClient) search(query, params string) (musicSearchResponse, error) {
 	req, _ := http.NewRequest("POST", "https://music.youtube.com/youtubei/v1/search?prettyPrint=false", jsonBody(newMusicSearchRequest(query, params)))
 
 	res, err := http.DefaultClient.Do(req)

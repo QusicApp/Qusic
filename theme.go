@@ -12,6 +12,9 @@ type myTheme struct{}
 var _ fyne.Theme = (*myTheme)(nil)
 
 func (m myTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	if name == theme.ColorNameBackground && !apprunning {
+		return color.Transparent
+	}
 	return theme.DefaultTheme().Color(name, variant)
 }
 

@@ -15,7 +15,6 @@ import (
 	a "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -30,10 +29,17 @@ var client = new(youtube.MusicClient)
 var player = pl.New()
 var app = a.NewWithID("il.oq.qusic")
 
-var border0 *fyne.Container
 var tabs *container.AppTabs
+var settingsButton *widget.Button
 var rpc = discordrpc.Client{ClientID: "1233164951342813275"}
+var fulld *widget.RichText
 var apprunning bool
+var bottom *fyne.Container
+
+var (
+	back, next *widget.Button
+	pause      *widgets.RoundedButton
+)
 
 func init() {
 	player.Initialize()
@@ -74,55 +80,29 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 		lyricsTxt.Segments[i] = seg
 	}
 	lyricsTxt.Refresh()
+	lyricsScroll.ScrollToTop()
 
 	image := song.Thumbnails[0]
 	d, _ := http.Get(image.URL)
 	img := canvas.NewImageFromReader(d.Body, song.Name)
 
-	back := widget.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), nil)
-	back.Importance = widget.LowImportance
-	pause := &widgets.RoundedButton{
-		Icon: theme.MediaPauseIcon(),
-	}
-	pause.OnTapped = func() {
-		player.PauseCycle()
-		if player.Paused() {
-			pause.SetIcon(theme.MediaPlayIcon())
-		} else {
-			pause.SetIcon(theme.MediaPauseIcon())
-		}
-	}
-	next := widget.NewButtonWithIcon("", theme.MediaSkipNextIcon(), nil)
-	next.Importance = widget.LowImportance
+	songProgressSlider.Max = float64(song.Duration / time.Millisecond)
+	songProgressSlider.Enable()
 
-	songProgressSlider = widget.NewSlider(0, float64(song.Duration/time.Millisecond))
-
-	p, f := widget.NewLabel("0:00"), widget.NewLabel(durString(song.Duration))
-	prevf := 0.0
-
-	songProgressSlider.OnChanged = func(f float64) {
-		passed := time.Duration(f) * time.Millisecond
-
-		p.SetText(durString(passed))
-		if f-prevf > 1000 {
-			player.Seek(int(f / 1000))
-		}
-		prevf = f
-	}
+	fulld.Segments[0].(*widget.TextSegment).Text = durString(song.Duration)
+	fulld.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
+	fulld.Refresh()
+	back.Enable()
+	pause.Enable()
+	next.Enable()
 
 	songinfo := &widgets.SongInfo{
 		Name:   song.Name,
 		Artist: song.Artists[0].Name,
 		Image:  img,
 	}
-
-	progress := container.NewBorder(nil, nil, p, f, songProgressSlider)
-	control := container.NewGridWithRows(2, container.NewHBox(layout.NewSpacer(), back, pause, next, layout.NewSpacer()), progress)
-
-	x := container.NewGridWithColumns(3, container.NewHBox(songinfo), control)
-
-	border0 = container.NewBorder(nil, x, nil, nil, tabs)
-	w.SetContent(border0)
+	bottom.Objects[0] = songinfo
+	bottom.Refresh()
 }
 
 func searchPage(w fyne.Window) fyne.CanvasObject {
@@ -199,23 +179,14 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 func main() {
 	logger.Info("Qusic [ made by oq ]")
 
-	driver, ok := app.Driver().(desktop.Driver)
-	if !ok {
-		return
-	}
-	sp := driver.CreateSplashWindow()
-	img := canvas.NewImageFromResource(resourceQusicPng)
-	img.FillMode = canvas.ImageFillOriginal
-	img.Resize(fyne.NewSize(400, 400))
-	sp.SetContent(img)
-
-	go func() {
+	app.Lifecycle().SetOnStarted(func() {
 		logger.Inf("Connecting to Discord RPC: ")
 		fmt.Println(rpc.Connect())
 
 		logger.Info("Launching app")
 		apprunning = true
 		w := app.NewWindow("Qusic")
+
 		tabs = container.NewAppTabs(
 			container.NewTabItemWithIcon("Home", theme.HomeIcon(), homePage()),
 			container.NewTabItemWithIcon("Search", theme.SearchIcon(), searchPage(w)),
@@ -224,32 +195,57 @@ func main() {
 
 		tabs.SetTabLocation(container.TabLocationLeading)
 
-		back := &widget.Button{Icon: theme.MediaSkipPreviousIcon(), Importance: widget.LowImportance}
+		back = &widget.Button{Icon: theme.MediaSkipPreviousIcon(), Importance: widget.LowImportance}
 		back.Disable()
 
-		pause := &widgets.RoundedButton{
+		pause = &widgets.RoundedButton{
 			Icon: theme.MediaPauseIcon(),
 		}
+		pause.OnTapped = func() {
+			player.PauseCycle()
+			if player.Paused() {
+				pause.SetIcon(theme.MediaPlayIcon())
+			} else {
+				pause.SetIcon(theme.MediaPauseIcon())
+			}
+		}
 		pause.Disable()
-		next := &widget.Button{Icon: theme.MediaSkipNextIcon(), Importance: widget.LowImportance}
+		next = &widget.Button{Icon: theme.MediaSkipNextIcon(), Importance: widget.LowImportance}
 		next.Disable()
 
-		s := widget.NewSlider(0, 0)
-		s.Disable()
+		settingsButton = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
+			settings(w)
+		})
+		settingsButton.Importance = widget.LowImportance
 
-		progress := container.NewBorder(nil, nil,
-			widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}),
-			widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}),
-			s)
+		songProgressSlider = widget.NewSlider(0, 0)
+		songProgressSlider.Disable()
+
+		var p *widget.RichText
+		p, fulld = widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}), widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}})
+		prevf := 0.0
+
+		songProgressSlider.OnChanged = func(f float64) {
+			passed := time.Duration(f) * time.Millisecond
+
+			p.Segments[0].(*widget.TextSegment).Text = durString(passed)
+			p.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
+			p.Refresh()
+			if f-prevf > 1000 {
+				player.Seek(int(f / 1000))
+			}
+			prevf = f
+		}
+
+		progress := container.NewBorder(nil, nil, p, fulld, songProgressSlider)
 		control := container.NewGridWithRows(2, container.NewHBox(layout.NewSpacer(), back, pause, next, layout.NewSpacer()), progress)
-		grid := container.NewGridWithColumns(3, layout.NewSpacer(), control)
 
-		border0 = container.NewBorder(nil, grid, nil, nil, tabs)
-		w.SetContent(border0)
+		bottom = container.NewGridWithColumns(3, layout.NewSpacer(), control)
+
+		w.SetContent(container.NewBorder(nil, bottom, nil, container.NewVBox(settingsButton), tabs))
 		resolution := screenresolution.GetPrimary()
-		w.Resize(fyne.NewSize(float32(resolution.Width), float32(resolution.Height)))
+		w.Resize(fyne.NewSize(float32(resolution.Width)/1.5, float32(resolution.Height)/1.5))
 		w.Show()
-		sp.Close()
 
 		tick := time.NewTicker(time.Millisecond)
 		for {
@@ -282,11 +278,16 @@ func main() {
 					lyricsTxt.Segments[lyric.Index].(*widget.TextSegment).Style.TextStyle.Bold = true
 					lyricsTxt.Refresh()
 					syncedLyrics = syncedLyrics[1:]
-					lyricsScroll.ScrollToBottom()
+
+					if lyric.Index != 0 {
+						lyricsScroll.Scrolled(&fyne.ScrollEvent{
+							Scrolled: fyne.NewDelta(0, -30),
+						})
+					}
 				}
 			}
 		}
-	}()
+	})
 
-	sp.ShowAndRun()
+	app.Run()
 }

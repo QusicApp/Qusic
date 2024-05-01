@@ -1,14 +1,14 @@
 package main
 
 import (
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 )
 
-func settingsDialog() {
-	dialog.NewCustomWithoutButtons("Settings", container.NewWithoutLayout(), nil)
-}
+func settings(w fyne.Window) {
+	b := container.NewBorder(nil, nil, nil, nil)
+	d := dialog.NewCustomWithoutButtons("Settings", b, w)
 
-func settingsShow() {
-
+	d.Show()
 }

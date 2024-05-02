@@ -31,8 +31,5 @@ func (songInfo *SongInfo) CreateRenderer() fyne.WidgetRenderer {
 		},
 	))
 
-	rect := canvas.NewRectangle(theme.DisabledButtonColor())
-	rect.CornerRadius = 10
-
-	return widget.NewSimpleRenderer(container.NewStack(rect, info))
+	return widget.NewSimpleRenderer(info)
 }

@@ -30,16 +30,17 @@ type Song struct {
 
 	Lyrics lyrics.Song
 
-	Name, AlbumName, URL string
-	Artists              []Artist
-	Thumbnails           []Thumbnail
+	Name, URL  string
+	Album      Artist
+	Artists    []Artist
+	Thumbnails []Thumbnail
 
 	Duration time.Duration
 	Plays    int
 }
 
 func (o *Song) FetchSongInfo() (err error) {
-	o.Lyrics, err = lyrics.GetSongLRCLIB(o.Name, o.Artists[0].Name, o.AlbumName, o.Duration, false)
+	o.Lyrics, err = lyrics.GetSongLRCLIB(o.Name, o.Artists[0].Name, o.Album.Name, o.Duration, false)
 	return
 }
 
@@ -106,9 +107,13 @@ func (p *Player) SpotifySong(s spotify.TrackObject) Song {
 	return Song{
 		Video: d, StreamURL: format.URL,
 
-		Name:      s.Name,
-		Artists:   artists,
-		AlbumName: s.Album.Name,
+		Name:    s.Name,
+		Artists: artists,
+		Album: Artist{
+			Name: s.Album.Name,
+			ID:   s.Album.ID,
+			URL:  s.Album.ExternalURLs.Spotify,
+		},
 
 		Duration: dur,
 		URL:      s.ExternalURLs.Spotify,
@@ -126,17 +131,21 @@ func (p *Player) YoutubeMusicSong(s youtube.MusicSearchResult) *Song {
 		artists[i] = Artist{
 			Name: artist.Name,
 			ID:   artist.ID,
-			URL:  fmt.Sprintf("https://www.youtube.com/channel/%s", artist.ID),
+			URL:  fmt.Sprintf("https://music.youtube.com/channel/%s", artist.ID),
 		}
 	}
 
 	return &Song{
 		Video: d, StreamURL: format.URL,
 
-		Name:       s.Title,
-		URL:        fmt.Sprintf("https://youtu.be/%s", s.VideoID),
-		Artists:    artists,
-		AlbumName:  s.Album,
+		Name:    s.Title,
+		URL:     fmt.Sprintf("https://youtu.be/%s", s.VideoID),
+		Artists: artists,
+		Album: Artist{
+			Name: s.Album.Name,
+			ID:   s.Album.ID,
+			URL:  fmt.Sprintf("https://music.youtube.com/browse/%s", s.Album.ID),
+		},
 		Thumbnails: *(*[]Thumbnail)(unsafe.Pointer(&s.Thumbnails)),
 
 		Duration: s.Duration,

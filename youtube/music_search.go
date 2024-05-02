@@ -23,9 +23,10 @@ type MusicSearchResult struct {
 		Width  int    `json:"width"`
 		Height int    `json:"height"`
 	}
-	VideoID, Title, Album string
-	Authors               []Author
-	Duration              time.Duration
+	VideoID, Title string
+	Album          Author
+	Authors        []Author
+	Duration       time.Duration
 
 	PlaysViews int
 
@@ -68,9 +69,14 @@ type musicThumbnailRenderer struct {
 type runs struct {
 	Runs []struct {
 		Text               string `json:"text"`
-		NavigationEndpoint *struct {
+		NavigationEndpoint struct {
 			BrowseEndpoint struct {
-				BrowseID string `json:"browseId"`
+				BrowseID                              string `json:"browseId"`
+				BrowseEndpointContextSupportedConfigs struct {
+					BrowseEndpointContextMusicConfig struct {
+						PageType string `json:"pageType"`
+					} `json:"browseEndpointContextMusicConfig"`
+				} `json:"browseEndpointContextSupportedConfigs"`
 			} `json:"browseEndpoint"`
 			WatchEndpoint struct {
 				VideoID string `json:"videoId"`
@@ -80,12 +86,31 @@ type runs struct {
 }
 
 func (r runs) Author() []Author {
+	authors := make([]Author, 0)
 	for _, run := range r.Runs {
-		if run.NavigationEndpoint != nil {
-			return []Author{{Name: run.Text, ID: run.NavigationEndpoint.BrowseEndpoint.BrowseID}}
+		if run.NavigationEndpoint.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.PageType == "MUSIC_PAGE_TYPE_ARTIST" || run.NavigationEndpoint.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.PageType == "MUSIC_PAGE_TYPE_USER_CHANNEL" {
+			authors = append(authors, Author{Name: run.Text, ID: run.NavigationEndpoint.BrowseEndpoint.BrowseID})
 		}
 	}
-	return []Author{}
+	return authors
+}
+
+func (r runs) Album() Author {
+	for _, run := range r.Runs {
+		if run.NavigationEndpoint.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.PageType == "MUSIC_PAGE_TYPE_ALBUM" {
+			return Author{Name: run.Text, ID: run.NavigationEndpoint.BrowseEndpoint.BrowseID}
+		}
+	}
+	return Author{}
+}
+
+func (r runs) Duration() string {
+	for _, run := range r.Runs {
+		if run.NavigationEndpoint.BrowseEndpoint.BrowseID == "" && strings.Index(run.Text, ":") != -1 {
+			return run.Text
+		}
+	}
+	return ""
 }
 
 type musicSearchResponse struct {
@@ -145,11 +170,13 @@ func (m *MusicClient) SearchVideos(query string) ([]MusicSearchResult, error) {
 	}
 	var results []MusicSearchResult
 
-	for _, song := range res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[0].MusicShelfRenderer.Contents {
+	i := len(res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents) - 1
+
+	for _, song := range res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[i].MusicShelfRenderer.Contents {
 		if len(song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs) != 5 {
 			continue
 		}
-		dur := song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[4].Text
+		dur := song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Duration()
 
 		sep := strings.Split(dur, ":")
 		var (
@@ -184,10 +211,12 @@ func (m *MusicClient) SearchSongs(query string) ([]MusicSearchResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	var results = make([]MusicSearchResult, len(res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[0].MusicShelfRenderer.Contents))
 
-	for i, song := range res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[0].MusicShelfRenderer.Contents {
-		dur := song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[4].Text
+	i := len(res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents) - 1
+
+	var results = make([]MusicSearchResult, len(res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[i].MusicShelfRenderer.Contents))
+	for i, song := range res.Contents.TabbedSearchResultsRenderer.Tabs[0].TabRenderer.Content.SectionListRenderer.Contents[i].MusicShelfRenderer.Contents {
+		dur := song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Duration()
 
 		sep := strings.Split(dur, ":")
 		var (
@@ -210,7 +239,7 @@ func (m *MusicClient) SearchSongs(query string) ([]MusicSearchResult, error) {
 			VideoID:    song.MusicResponsiveListItemRenderer.PlaylistItemData.VideoID,
 			Thumbnails: song.MusicResponsiveListItemRenderer.Thumbnail.MusicThumbnailRenderer.Thumbnail.Thumbnails,
 			Authors:    song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Author(),
-			Album:      song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[2].Text,
+			Album:      song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Album(),
 			Duration:   duration,
 		}
 	}

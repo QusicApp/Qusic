@@ -38,7 +38,7 @@ var apprunning bool
 var bottom *fyne.Container
 
 var (
-	back, next *widget.Button
+	back, next *widgets.Button
 	pause      *widgets.RoundedButton
 )
 
@@ -58,14 +58,18 @@ var searchContent = (fyne.CanvasObject)(container.NewWithoutLayout())
 var songProgressSlider *widget.Slider
 
 func durString(dur time.Duration) string {
-	return fmt.Sprintf("%0d:%02d", int(dur.Minutes())%60, int(dur.Seconds())%60)
+	if dur > time.Hour {
+		return fmt.Sprintf("%0d:%02d:%02d", int(dur.Hours())%60, int(dur.Minutes())%60, int(dur.Seconds())%60)
+	} else {
+		return fmt.Sprintf("%0d:%02d", int(dur.Minutes())%60, int(dur.Seconds())%60)
+	}
 }
 
 func setPlayedSong(song *pl.Song, w fyne.Window) {
 	logger.Infof("Now played song: %s (%s)", song.Name, song.URL)
 	err := song.FetchSongInfo()
 	if err != nil {
-		logger.Errorf("No lyrics for %s:%v", song.Name, err)
+		logger.Errorf("No lyrics for %s<%s,%s,%s>:%v", song.Name, song.Album.Name, song.Artists[0].Name, song.Duration, err)
 	} else {
 		logger.Infof("Fetched lyrics for %s", song.Name)
 	}
@@ -79,6 +83,27 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 		seg.Text = lyric.Lyric
 		seg.Style.TextStyle.Bold = false
 		lyricsTxt.Segments[i] = seg
+	}
+	lyricsTxt.OnTapped = func(pe *fyne.PointEvent) {
+		size := (fyne.CurrentApp().Settings().Theme().Size(theme.SizeNameHeadingText) + fyne.CurrentApp().Settings().Theme().Size(theme.SizeNameInnerPadding))
+
+		segment := int((pe.AbsolutePosition.Y / size) + (lyricsScroll.Offset.Y / size))
+
+		cs := player.CurrentSong()
+		if segment < 0 || segment > len(cs.Lyrics.SyncedLyrics) {
+			return
+		}
+		player.Seek(int(cs.Lyrics.SyncedLyrics[segment].At / time.Second))
+
+		if segment < syncedLyrics[0].Index {
+			for _, s := range lyricsTxt.Segments[:syncedLyrics[0].Index] {
+				s.(*widget.TextSegment).Style.TextStyle.Bold = false
+			}
+		}
+		for _, s := range lyricsTxt.Segments[:segment] {
+			s.(*widget.TextSegment).Style.TextStyle.Bold = true
+		}
+		syncedLyrics = cs.Lyrics.SyncedLyrics[segment:]
 	}
 	lyricsTxt.Refresh()
 
@@ -105,77 +130,6 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	bottom.Refresh()
 }
 
-func searchPage(w fyne.Window) fyne.CanvasObject {
-	searchBar := widget.NewEntry()
-	searchBar.SetPlaceHolder("What do you want to play?")
-	searchButton := widget.NewButtonWithIcon("Search", theme.SearchIcon(), func() {
-		if searchBar.Text == "" {
-			return
-		}
-		searchBar.OnSubmitted(searchBar.Text)
-	})
-
-	border := container.NewBorder(container.NewGridWithColumns(3, layout.NewSpacer(), container.NewBorder(nil, nil, nil, searchButton, searchBar)), nil, nil, nil, searchContent)
-
-	searchBar.OnSubmitted = func(s string) {
-		logger.Inff("Searching youtube music (query:\"%s\"): ", s)
-		songs, e := client.SearchSongs(s)
-		videos, e1 := client.SearchVideos(s)
-		fmt.Printf("%d songs (%v), %d videos (%v)\n", len(songs), e, len(videos), e1)
-
-		results := [2][]youtube.MusicSearchResult{songs, videos}
-		var forms = [2]fyne.CanvasObject{
-			layout.NewSpacer(), layout.NewSpacer(),
-		}
-
-		for i, res := range results {
-			if len(res) == 0 {
-				continue
-			}
-			txt := "Songs"
-			if i == 1 {
-				txt = "Videos"
-			}
-			form := container.NewVBox(widget.NewRichTextFromMarkdown("# " + txt))
-			songsc := container.NewVBox()
-
-			for _, s := range res {
-				song := s
-				image := song.Thumbnails[0]
-				d, _ := http.Get(image.URL)
-				img := canvas.NewImageFromReader(d.Body, song.Title)
-				img.SetMinSize(fyne.NewSize(48, 48))
-				songsc.Add(&widgets.SongResult{
-					Name:           song.Title,
-					Artist:         song.Authors[0].Name,
-					Image:          img,
-					DurationString: durString(song.Duration),
-					OnTapped: func() {
-						go func() {
-							so := player.YoutubeMusicSong(song)
-							logger.Inff("Playing song %s: ", so.Name)
-							err := player.PlayNow(so)
-							fmt.Println(err)
-							if err != nil {
-								return
-							}
-							setPlayedSong(so, w)
-						}()
-					},
-				})
-			}
-			form.Add(songsc)
-			forms[i] = form
-		}
-
-		grid := container.NewGridWithColumns(2, container.NewVScroll(forms[0]), container.NewVScroll(forms[1]))
-		searchContent = grid
-		border.Objects[0] = searchContent
-		border.Refresh()
-	}
-	return border
-}
-
 func main() {
 	logger.Info("Qusic [ made by oq ]")
 
@@ -194,14 +148,15 @@ func main() {
 		})
 
 		tabs = container.NewAppTabs(
-			container.NewTabItemWithIcon("Home", theme.HomeIcon(), homePage()),
-			container.NewTabItemWithIcon("Search", theme.SearchIcon(), searchPage(window)),
+			container.NewTabItemWithIcon("", theme.HomeIcon(), homePage()),
+			container.NewTabItemWithIcon("", theme.SearchIcon(), searchPage(window)),
 			container.NewTabItem("Lyrics", lyricsPage()),
 		)
 
 		tabs.SetTabLocation(container.TabLocationLeading)
 
-		back = &widget.Button{Icon: theme.MediaSkipPreviousIcon(), Importance: widget.LowImportance}
+		back = widgets.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), nil)
+		back.Importance = widget.LowImportance
 		back.Disable()
 
 		pause = &widgets.RoundedButton{
@@ -216,7 +171,8 @@ func main() {
 			}
 		}
 		pause.Disable()
-		next = &widget.Button{Icon: theme.MediaSkipNextIcon(), Importance: widget.LowImportance}
+		next = widgets.NewButtonWithIcon("", theme.MediaSkipNextIcon(), nil)
+		next.Importance = widget.LowImportance
 		next.Disable()
 
 		settingsButton = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
@@ -248,7 +204,11 @@ func main() {
 
 		bottom = container.NewGridWithColumns(3, layout.NewSpacer(), control)
 
-		window.SetContent(container.NewBorder(nil, bottom, nil, container.NewVBox(settingsButton), tabs))
+		window.SetContent(container.NewBorder(nil,
+			container.NewStack(
+				canvas.NewRectangle(NotSoBlackColor),
+				container.NewPadded(bottom),
+			), nil, container.NewVBox(settingsButton), tabs))
 		resolution := screenresolution.GetPrimary()
 		window.Resize(fyne.NewSize(float32(resolution.Width)/1.5, float32(resolution.Height)/1.5))
 		window.Show()
@@ -285,13 +245,11 @@ func main() {
 					lyricsTxt.Refresh()
 					syncedLyrics = syncedLyrics[1:]
 
-					if lyric.Index == 0 {
-						lyricsScroll.ScrollToTop()
-					} else {
-						lyricsScroll.Scrolled(&fyne.ScrollEvent{
-							Scrolled: fyne.NewDelta(0, -30),
-						})
-					}
+					dy := lyricsScroll.Offset.Y - (float32(lyric.Index) * theme.TextHeadingSize())
+
+					lyricsScroll.Scrolled(&fyne.ScrollEvent{
+						Scrolled: fyne.NewDelta(0, dy),
+					})
 				}
 			}
 		}

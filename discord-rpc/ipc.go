@@ -1,12 +1,11 @@
+//go:build !windows
+
 package discordrpc
 
 import (
 	"net"
 	"os"
-	"runtime"
 	"time"
-
-	"gopkg.in/natefinch/npipe.v2"
 )
 
 func getIpcPath() string {
@@ -24,18 +23,10 @@ func getIpcPath() string {
 }
 
 func newConnection() (net.Conn, error) {
-	if runtime.GOOS == "windows" {
-		sock, err := npipe.DialTimeout(`\\.\pipe\discord-ipc-0`, time.Second*2)
-		if err != nil {
-			return nil, err
-		}
-		return sock, nil
-	} else {
-		sock, err := net.DialTimeout("unix", getIpcPath()+"/discord-ipc-0", time.Second*2)
-		if err != nil {
-			return nil, err
-		}
-
-		return sock, nil
+	sock, err := net.DialTimeout("unix", getIpcPath()+"/discord-ipc-0", time.Second*2)
+	if err != nil {
+		return nil, err
 	}
+
+	return sock, nil
 }

@@ -79,24 +79,24 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 	lyricsTxt.Segments = make([]widget.RichTextSegment, len(syncedLyrics))
 	for i, lyric := range syncedLyrics {
-		segment := i
-		var seg = new(widgets.TextSegment)
+		//segment := i
+		var seg = new(widget.TextSegment)
 		seg.Style.SizeName = theme.SizeNameHeadingText
 		seg.Text = lyric.Lyric
 		seg.Style.TextStyle.Bold = false
-		seg.OnTapped = func() {
+		/*seg.OnTapped = func() {
 			player.Seek(int(song.Lyrics.SyncedLyrics[segment].At / time.Second))
 
 			if segment < syncedLyrics[0].Index {
 				for _, s := range lyricsTxt.Segments[:syncedLyrics[0].Index] {
-					s.(*widgets.TextSegment).Style.TextStyle.Bold = false
+					s.(*widget.TextSegment).Style.TextStyle.Bold = false
 				}
 			}
 			for _, s := range lyricsTxt.Segments[:segment] {
-				s.(*widgets.TextSegment).Style.TextStyle.Bold = true
+				s.(*widget.TextSegment).Style.TextStyle.Bold = true
 			}
 			syncedLyrics = syncedLyrics[segment:]
-		}
+		}*/
 		lyricsTxt.Segments[i] = seg
 	}
 	lyricsTxt.Refresh()
@@ -242,7 +242,7 @@ func main() {
 				}
 				lyric := syncedLyrics[0]
 				if lyric.At <= passed {
-					lyricsTxt.Segments[lyric.Index].(*widgets.TextSegment).Style.TextStyle.Bold = true
+					lyricsTxt.Segments[lyric.Index].(*widget.TextSegment).Style.TextStyle.Bold = true
 					lyricsTxt.Refresh()
 					syncedLyrics = syncedLyrics[1:]
 

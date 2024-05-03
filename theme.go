@@ -12,9 +12,7 @@ type myTheme struct{}
 var _ fyne.Theme = (*myTheme)(nil)
 
 var BackgroundColor = color.RGBA{18, 18, 18, 255}
-var NotSoBlackColor = color.RGBA{12, 12, 12, 255}
-var ForegroundColor = color.RGBA{184, 195, 188, 255}
-var HoverColor = color.RGBA{217, 221, 231, 255}
+var OverlayBackgroundColor = color.RGBA{25, 25, 25, 255}
 
 func (m myTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	switch name {
@@ -22,6 +20,8 @@ func (m myTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) colo
 		return BackgroundColor
 	case theme.ColorNamePrimary:
 		return m.Color(theme.ColorNameForeground, variant)
+	case theme.ColorNameOverlayBackground:
+		return OverlayBackgroundColor
 	}
 	return theme.DefaultTheme().Color(name, variant)
 }

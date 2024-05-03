@@ -1,17 +1,16 @@
 package main
 
 import (
-	"qusic/widgets"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 )
 
-var lyricsTxt *widgets.TappableRichText
+var lyricsTxt *widget.RichText
 var lyricsScroll *container.Scroll
 
 func lyricsPage() fyne.CanvasObject {
-	lyricsTxt = widgets.NewRichText()
+	lyricsTxt = widget.NewRichText()
 	lyricsTxt.Wrapping = fyne.TextWrapBreak
 
 	lyricsScroll = container.NewVScroll(lyricsTxt)

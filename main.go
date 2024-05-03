@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"net/http"
 	discordrpc "qusic/discord-rpc"
 	"qusic/logger"
@@ -78,32 +79,25 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 	lyricsTxt.Segments = make([]widget.RichTextSegment, len(syncedLyrics))
 	for i, lyric := range syncedLyrics {
-		var seg = new(widget.TextSegment)
+		segment := i
+		var seg = new(widgets.TextSegment)
 		seg.Style.SizeName = theme.SizeNameHeadingText
 		seg.Text = lyric.Lyric
 		seg.Style.TextStyle.Bold = false
-		lyricsTxt.Segments[i] = seg
-	}
-	lyricsTxt.OnTapped = func(pe *fyne.PointEvent) {
-		size := (fyne.CurrentApp().Settings().Theme().Size(theme.SizeNameHeadingText) + fyne.CurrentApp().Settings().Theme().Size(theme.SizeNameInnerPadding))
+		seg.OnTapped = func() {
+			player.Seek(int(song.Lyrics.SyncedLyrics[segment].At / time.Second))
 
-		segment := int((pe.AbsolutePosition.Y / size) + (lyricsScroll.Offset.Y / size))
-
-		cs := player.CurrentSong()
-		if segment < 0 || segment > len(cs.Lyrics.SyncedLyrics) {
-			return
-		}
-		player.Seek(int(cs.Lyrics.SyncedLyrics[segment].At / time.Second))
-
-		if segment < syncedLyrics[0].Index {
-			for _, s := range lyricsTxt.Segments[:syncedLyrics[0].Index] {
-				s.(*widget.TextSegment).Style.TextStyle.Bold = false
+			if segment < syncedLyrics[0].Index {
+				for _, s := range lyricsTxt.Segments[:syncedLyrics[0].Index] {
+					s.(*widgets.TextSegment).Style.TextStyle.Bold = false
+				}
 			}
+			for _, s := range lyricsTxt.Segments[:segment] {
+				s.(*widgets.TextSegment).Style.TextStyle.Bold = true
+			}
+			syncedLyrics = syncedLyrics[segment:]
 		}
-		for _, s := range lyricsTxt.Segments[:segment] {
-			s.(*widget.TextSegment).Style.TextStyle.Bold = true
-		}
-		syncedLyrics = cs.Lyrics.SyncedLyrics[segment:]
+		lyricsTxt.Segments[i] = seg
 	}
 	lyricsTxt.Refresh()
 
@@ -137,14 +131,20 @@ func main() {
 	var window fyne.Window
 
 	app.Lifecycle().SetOnStarted(func() {
-		logger.Inf("Connecting to Discord RPC: ")
-		fmt.Println(rpc.Connect())
+		if preferences.Bool("discord_rpc") {
+			logger.Inf("Connecting to Discord RPC: ")
+			fmt.Println(rpc.Connect())
+		}
 
 		logger.Info("Launching app")
 		apprunning = true
 		window = app.NewWindow("Qusic")
 		window.SetCloseIntercept(func() {
-			window.Hide()
+			if preferences.Bool("hide_app") {
+				window.Hide()
+			} else {
+				app.Quit()
+			}
 		})
 
 		tabs = container.NewAppTabs(
@@ -206,10 +206,9 @@ func main() {
 
 		window.SetContent(container.NewBorder(nil,
 			container.NewStack(
-				canvas.NewRectangle(NotSoBlackColor),
+				canvas.NewRectangle(color.Black),
 				container.NewPadded(bottom),
 			), nil, container.NewVBox(settingsButton), tabs))
-		resolution := screenresolution.GetPrimary()
 		window.Resize(fyne.NewSize(float32(resolution.Width)/1.5, float32(resolution.Height)/1.5))
 		window.Show()
 
@@ -225,15 +224,17 @@ func main() {
 					continue
 				}
 				cs := player.CurrentSong()
-				rpc.SetActivity(discordrpc.Activity{
-					Type:    discordrpc.Listening,
-					Details: cs.Name,
-					State:   "By " + cs.Artists[0].Name,
-					Timestamps: discordrpc.ActivityTimestamps{
-						Start: int(time.Now().UnixMilli()) - int(passed/time.Millisecond),
-						End:   int(time.Now().UnixMilli()) + int(cs.Duration/time.Millisecond) - int(passed/time.Millisecond),
-					},
-				})
+				if preferences.Bool("discord_rpc") {
+					rpc.SetActivity(discordrpc.Activity{
+						Type:    discordrpc.Listening,
+						Details: cs.Name,
+						State:   "By " + cs.Artists[0].Name,
+						Timestamps: discordrpc.ActivityTimestamps{
+							Start: int(time.Now().UnixMilli()) - int(passed/time.Millisecond),
+							End:   int(time.Now().UnixMilli()) + int(cs.Duration/time.Millisecond) - int(passed/time.Millisecond),
+						},
+					})
+				}
 				songProgressSlider.SetValue(float64(passed / time.Millisecond))
 			default:
 				if len(syncedLyrics) == 0 {
@@ -241,7 +242,7 @@ func main() {
 				}
 				lyric := syncedLyrics[0]
 				if lyric.At <= passed {
-					lyricsTxt.Segments[lyric.Index].(*widget.TextSegment).Style.TextStyle.Bold = true
+					lyricsTxt.Segments[lyric.Index].(*widgets.TextSegment).Style.TextStyle.Bold = true
 					lyricsTxt.Refresh()
 					syncedLyrics = syncedLyrics[1:]
 
@@ -263,3 +264,5 @@ func main() {
 
 	app.Run()
 }
+
+var resolution = screenresolution.GetPrimary()

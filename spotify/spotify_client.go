@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
-func New(id, secret string) *Client {
-	return &Client{id: id, secret: secret, client: http.Client{}}
+func New() *Client {
+	return new(Client)
 }
 
 type Client struct {
-	id, secret               string
 	client                   http.Client
+	id, secret               string
 	currentAccessToken       string
 	currentAccessTokenExpiry time.Time
 }
@@ -24,39 +23,50 @@ func (c *Client) expired() bool {
 	return time.Now().After(c.currentAccessTokenExpiry)
 }
 
+func (c *Client) Ok() bool {
+	return c.getAccessToken() == nil
+}
+
 func (c *Client) getAccessToken() error {
-	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token",
-		strings.NewReader(fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", c.id, c.secret)))
+	res, err := http.Get("https://open.spotify.com/get_access_token?reason=transport&productType=web_player")
+
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	res, err := c.client.Do(req)
-	if err != nil {
-		return err
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("invalid api key")
 	}
 
 	var response struct {
-		AccessToken string        `json:"access_token"`
-		ExpiresIn   time.Duration `json:"expires_in"`
+		AccessToken                      string `json:"accessToken"`
+		AccessTokenExpirationTimestampMS int64  `json:"accessTokenExpirationTimestampMs"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		fmt.Println(err)
 		return err
 	}
-	expiry := time.Now().Add(time.Second * response.ExpiresIn)
 	c.currentAccessToken = response.AccessToken
-	c.currentAccessTokenExpiry = expiry
+	c.currentAccessTokenExpiry = time.UnixMilli(response.AccessTokenExpirationTimestampMS)
+
 	return nil
 }
 
-func (c *Client) newRequest(method, endpoint string) (*http.Request, error) {
+func (c *Client) newRequest(method, endpoint string, nobase bool) (*http.Request, error) {
 	if c.expired() {
 		if err := c.getAccessToken(); err != nil {
 			return nil, err
 		}
 	}
-	req, err := http.NewRequest(method, "https://api.spotify.com/v1"+endpoint, nil)
+
+	if !nobase {
+		endpoint = "https://api.spotify.com/v1" + endpoint
+	}
+
+	req, err := http.NewRequest(method, endpoint, nil)
 	req.Header.Set("Authorization", "Bearer "+c.currentAccessToken)
+	req.Header.Set("App-Platform", "WebPlayer")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36")
 	return req, err
 }
 
@@ -74,7 +84,7 @@ func (c *Client) Search(query string, typ []QueryType, market countryCode, limit
 	if includeExternalAudio {
 		url += "&include_external=audio"
 	}
-	req, err := c.newRequest("GET", url)
+	req, err := c.newRequest("GET", url, false)
 	if err != nil {
 		return SearchResult{}, err
 	}
@@ -85,6 +95,28 @@ func (c *Client) Search(query string, typ []QueryType, market countryCode, limit
 	var result SearchResult
 	err = json.NewDecoder(res.Body).Decode(&result)
 	return result, err
+}
+
+// WIP: this is useless until I find a proper way to get client tokens
+func (c *Client) Lyrics(trackId string) (Lyrics, error) {
+	req, err := c.newRequest("GET",
+		fmt.Sprintf("https://spclient.wg.spotify.com/color-lyrics/v2/track/%s?format=json&vocalRemoval=false&market=from_token", url.PathEscape(trackId)),
+		true,
+	)
+	if err != nil {
+		return Lyrics{}, err
+	}
+
+	res, err := c.client.Do(req)
+	if err != nil {
+		return Lyrics{}, err
+	}
+	var result struct {
+		Lyrics Lyrics `json:"lyrics"`
+	}
+	err = json.NewDecoder(res.Body).Decode(&result)
+
+	return result.Lyrics, err
 }
 
 func stringsCommaSeperate(s []QueryType) string {

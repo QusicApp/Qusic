@@ -22,7 +22,7 @@ func (button *RoundedButton) CreateRenderer() fyne.WidgetRenderer {
 	button.ExtendBaseWidget(button)
 
 	res := theme.NewThemedResource(button.Icon)
-	res.ColorName = theme.ColorNameForeground
+	res.ColorName = theme.ColorNamePrimary
 
 	circle := canvas.NewCircle(theme.ButtonColor())
 

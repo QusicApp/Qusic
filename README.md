@@ -2,9 +2,9 @@
 Free music app written in Go
 
 ## Features
-- Uses YouTube Music with no need for API key
+- Supports YouTube Music & Spotify with no need for API key!
 - No ads
-- Timed lyrics
+- Lyrics from LRCLIB, YouTube Music, Genius & supports synced lyrics
 
 ## Installation
 ### [Releases](https://github.com/oq-x/qusic/releases)

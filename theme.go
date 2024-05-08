@@ -22,6 +22,8 @@ func (m myTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) colo
 		return m.Color(theme.ColorNameForeground, variant)
 	case theme.ColorNameOverlayBackground:
 		return OverlayBackgroundColor
+	case theme.ColorNameHyperlink:
+		return m.Color(theme.ColorNameForeground, variant)
 	}
 	return theme.DefaultTheme().Color(name, variant)
 }
@@ -50,9 +52,9 @@ func (m myTheme) Font(style fyne.TextStyle) fyne.Resource {
 }
 
 func (m myTheme) Size(name fyne.ThemeSizeName) float32 {
-	if name == theme.SizeNameInputRadius {
-		return 20
-	}
+	//if name == theme.SizeNameInputRadius {
+	//	return 20
+	//}
 	if name == theme.SizeNamePadding {
 		return 5
 	}

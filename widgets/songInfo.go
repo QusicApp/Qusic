@@ -20,16 +20,15 @@ func (songInfo *SongInfo) CreateRenderer() fyne.WidgetRenderer {
 	songInfo.Image.FillMode = canvas.ImageFillContain
 	songInfo.Image.SetMinSize(fyne.NewSize(64, 64))
 
-	info := container.NewHBox(songInfo.Image, widget.NewRichText(
-		&widget.TextSegment{
+	return widget.NewSimpleRenderer(container.NewBorder(nil, nil, songInfo.Image, nil, &widget.RichText{
+		Segments: []widget.RichTextSegment{&widget.TextSegment{
 			Text:  songInfo.Name,
 			Style: widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}},
 		},
-		&widget.TextSegment{
-			Text:  songInfo.Artist,
-			Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
-		},
-	))
-
-	return widget.NewSimpleRenderer(info)
+			&widget.TextSegment{
+				Text:  songInfo.Artist,
+				Style: widget.RichTextStyle{ColorName: theme.ColorNamePlaceHolder},
+			}},
+		Wrapping: fyne.TextWrapBreak,
+	}))
 }

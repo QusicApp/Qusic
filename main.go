@@ -3,19 +3,22 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"math"
 	"net/http"
 	discordrpc "qusic/discord-rpc"
 	"qusic/logger"
 	"qusic/lyrics"
 	pl "qusic/player"
+	"strings"
+
 	"qusic/widgets"
-	"qusic/youtube"
 	"time"
 
 	"fyne.io/fyne/v2"
 	a "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -23,12 +26,10 @@ import (
 	"github.com/fstanis/screenresolution"
 )
 
-//var _ = godotenv.Load()
-//var id = os.Getenv("SPOTIFY_ID")
-//var secret = os.Getenv("SPOTIFY_SECRET")
+var youtubeSource pl.YouTubeMusicSource
+var spotifySource = pl.NewSpotifySource()
 
-var client = new(youtube.MusicClient)
-var player = pl.New()
+var player = pl.New(youtubeSource)
 var app = a.NewWithID("il.oq.qusic")
 
 var tabs *container.AppTabs
@@ -68,37 +69,64 @@ func durString(dur time.Duration) string {
 
 func setPlayedSong(song *pl.Song, w fyne.Window) {
 	logger.Infof("Now played song: %s (%s)", song.Name, song.URL)
-	err := song.FetchSongInfo()
+
+	source := preferences.String("lyrics.source")
+	var err error
+	switch source {
+	case "lrclib":
+		song.Lyrics, err = lyrics.GetSongLRCLIB(song.Name, song.Artists[0].Name, song.Album.Name, song.Duration, false)
+	case "ytmusic":
+		song.Lyrics, err = lyrics.GetSongYTMusic(song.Video.ID)
+	case "genius":
+		song.Lyrics, err = lyrics.GetSongGenius(song.Artists[0].Name, song.Name)
+	}
 	if err != nil {
-		logger.Errorf("No lyrics for %s<%s,%s,%s>:%v", song.Name, song.Album.Name, song.Artists[0].Name, song.Duration, err)
+		logger.Errorf("No lyrics for %s<source:%s,album:%s,artist:%s,duration:%s>:%v", song.Name, source, song.Album.Name, song.Artists[0].Name, song.Duration, err)
 	} else {
-		logger.Infof("Fetched lyrics for %s", song.Name)
+		logger.Infof("Fetched lyrics for %s (source: %s)", song.Name, source)
 	}
 
 	syncedLyrics = song.Lyrics.SyncedLyrics
 
-	lyricsTxt.Segments = make([]widget.RichTextSegment, len(syncedLyrics))
-	for i, lyric := range syncedLyrics {
-		//segment := i
-		var seg = new(widget.TextSegment)
-		seg.Style.SizeName = theme.SizeNameHeadingText
-		seg.Text = lyric.Lyric
-		seg.Style.TextStyle.Bold = false
-		/*seg.OnTapped = func() {
-			player.Seek(int(song.Lyrics.SyncedLyrics[segment].At / time.Second))
+	if len(syncedLyrics) == 0 {
+		lines := strings.Split(song.Lyrics.PlainLyrics, "\n")
+		lyricsTxt.Segments = make([]widget.RichTextSegment, len(lines))
+		for i, line := range lines {
+			var seg = new(widget.TextSegment)
+			seg.Style.SizeName = theme.SizeNameHeadingText
+			seg.Text = line
+			seg.Style.TextStyle.Bold = false
 
-			if segment < syncedLyrics[0].Index {
-				for _, s := range lyricsTxt.Segments[:syncedLyrics[0].Index] {
-					s.(*widget.TextSegment).Style.TextStyle.Bold = false
+			lyricsTxt.Segments[i] = seg
+		}
+	} else {
+		lyricsTxt.Segments = make([]widget.RichTextSegment, len(syncedLyrics))
+		for i, lyric := range syncedLyrics {
+			//segment := i
+			var seg = new(widget.TextSegment)
+			seg.Style.SizeName = theme.SizeNameHeadingText
+			seg.Text = lyric.Lyric
+			seg.Style.TextStyle.Bold = false
+			/*seg.OnTapped = func() {
+				player.Seek(int(song.Lyrics.SyncedLyrics[segment].At / time.Second))
+
+				if segment < syncedLyrics[0].Index {
+					for _, s := range lyricsTxt.Segments[:syncedLyrics[0].Index] {
+						s.(*widget.TextSegment).Style.TextStyle.Bold = false
+					}
 				}
-			}
-			for _, s := range lyricsTxt.Segments[:segment] {
-				s.(*widget.TextSegment).Style.TextStyle.Bold = true
-			}
-			syncedLyrics = syncedLyrics[segment:]
-		}*/
-		lyricsTxt.Segments[i] = seg
+				for _, s := range lyricsTxt.Segments[:segment] {
+					s.(*widget.TextSegment).Style.TextStyle.Bold = true
+				}
+				syncedLyrics = syncedLyrics[segment:]
+			}*/
+			lyricsTxt.Segments[i] = seg
+		}
 	}
+	lyricsTxt.Segments = append(lyricsTxt.Segments, &widget.TextSegment{
+		Style: widget.RichTextStyle{SizeName: theme.SizeNameSubHeadingText},
+		Text:  "Source: " + song.Lyrics.LyricSource,
+	})
 	lyricsTxt.Refresh()
 
 	image := song.Thumbnails[0]
@@ -110,6 +138,7 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 	fulld.Segments[0].(*widget.TextSegment).Text = durString(song.Duration)
 	fulld.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
+
 	fulld.Refresh()
 	back.Enable()
 	pause.Enable()
@@ -126,6 +155,9 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 func main() {
 	logger.Info("Qusic [ made by oq ]")
+	if preferences.String("source") == "spotify" {
+		player.Source = spotifySource
+	}
 
 	app.SetIcon(resourceQusicPng)
 	var window fyne.Window
@@ -133,7 +165,7 @@ func main() {
 	app.Lifecycle().SetOnStarted(func() {
 		if preferences.Bool("discord_rpc") {
 			logger.Inf("Connecting to Discord RPC: ")
-			fmt.Println(rpc.Connect())
+			logger.Println(rpc.Connect())
 		}
 
 		logger.Info("Launching app")
@@ -155,7 +187,11 @@ func main() {
 
 		tabs.SetTabLocation(container.TabLocationLeading)
 
-		back = widgets.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), nil)
+		back = widgets.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {
+			if p, _ := player.TimePosition(false); p >= time.Second*2 {
+				player.Seek(0)
+			}
+		})
 		back.Importance = widget.LowImportance
 		back.Disable()
 
@@ -193,8 +229,18 @@ func main() {
 			p.Segments[0].(*widget.TextSegment).Text = durString(passed)
 			p.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
 			p.Refresh()
-			if f-prevf > 1000 {
+			if math.Abs(f-prevf) > 1000 {
 				player.Seek(int(f / 1000))
+				cs := player.CurrentSong()
+				var in int
+				for i, lyric := range cs.Lyrics.SyncedLyrics {
+					if lyric.At <= passed {
+						in++
+					}
+					lyricsTxt.Segments[i].(*widget.TextSegment).Style.TextStyle.Bold = lyric.At <= passed
+				}
+				syncedLyrics = cs.Lyrics.SyncedLyrics[in:]
+				lyricsTxt.Refresh()
 			}
 			prevf = f
 		}

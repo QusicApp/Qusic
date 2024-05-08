@@ -3,19 +3,28 @@ package player
 import (
 	"fmt"
 	"qusic/lyrics"
-	"qusic/spotify"
-	"qusic/youtube"
 	"strconv"
 	"time"
-	"unsafe"
 
 	yt "github.com/kkdai/youtube/v2"
 
 	"github.com/gen2brain/go-mpv"
 )
 
-type Artist struct {
+type Named struct {
 	Name, URL, ID string
+}
+
+type Artist struct {
+	Named
+	Thumbnails Thumbnails
+	Listeners  int
+}
+
+type Album struct {
+	Named
+	Thumbnails Thumbnails
+	Year       int
 }
 
 type Thumbnail struct {
@@ -24,27 +33,60 @@ type Thumbnail struct {
 	Height int    `json:"height"`
 }
 
+type SearchResult struct {
+	TopResult Song
+
+	Songs   []Song
+	Artists []Artist
+	Albums  []Album
+}
+
+type Thumbnails []Thumbnail
+
+func (t Thumbnails) Max() Thumbnail {
+	i := -1
+	x, y := 0, 0
+	for in, thumbnail := range t {
+		if thumbnail.Width > x && thumbnail.Height > y {
+			x, y = thumbnail.Width, thumbnail.Height
+			i = in
+		}
+	}
+	if i == -1 {
+		return Thumbnail{}
+	}
+	return t[i]
+}
+
+const (
+	YTMusic = iota
+	Spotify
+)
+
 type Song struct {
 	Video     *yt.Video
 	StreamURL string
 
+	Provider int
+
 	Lyrics lyrics.Song
 
-	Name, URL  string
-	Album      Artist
-	Artists    []Artist
-	Thumbnails []Thumbnail
+	Name, URL, ID string
+	Album         Album
+	Artists       []Artist
+	Thumbnails    Thumbnails
 
 	Duration time.Duration
 	Plays    int
 }
 
-func (o *Song) FetchSongInfo() (err error) {
-	o.Lyrics, err = lyrics.GetSongLRCLIB(o.Name, o.Artists[0].Name, o.Album.Name, o.Duration, false)
-	return
+type Source interface {
+	GetVideo(*Song)
+	Search(query string) SearchResult
 }
 
 type Player struct {
+	Source
 	player *mpv.Mpv
 	queue  []*Song
 
@@ -52,10 +94,11 @@ type Player struct {
 	currentSong int
 }
 
-func New() *Player {
+func New(src Source) *Player {
 	return &Player{
 		player: mpv.New(),
 		queue:  make([]*Song, 0),
+		Source: src,
 	}
 }
 
@@ -74,83 +117,6 @@ func abs(d time.Duration) time.Duration {
 		return -d
 	}
 	return d
-}
-
-func (p *Player) SpotifySong(s spotify.TrackObject) Song {
-	v, _ := (*youtube.MusicClient).SearchSongs(nil, s.Artists[0].Name+" - "+s.Name)
-
-	dur := *(*time.Duration)(unsafe.Pointer(&s.DurationMS)) * time.Millisecond
-	var vid *youtube.MusicSearchResult
-	for _, video := range v {
-		if abs(video.Duration-dur) <= 2*time.Second {
-			vid = &video
-			break
-		}
-	}
-
-	if vid == nil {
-		vid = &v[0]
-	}
-
-	d, _ := vid.Data()
-	format := d.Formats.Type("audio")[0]
-
-	var artists = make([]Artist, len(s.Artists))
-	for i, artist := range s.Artists {
-		artists[i] = Artist{
-			Name: artist.Name,
-			ID:   artist.ID,
-			URL:  artist.ExternalURLs.Spotify,
-		}
-	}
-
-	return Song{
-		Video: d, StreamURL: format.URL,
-
-		Name:    s.Name,
-		Artists: artists,
-		Album: Artist{
-			Name: s.Album.Name,
-			ID:   s.Album.ID,
-			URL:  s.Album.ExternalURLs.Spotify,
-		},
-
-		Duration: dur,
-		URL:      s.ExternalURLs.Spotify,
-
-		Thumbnails: *(*[]Thumbnail)(unsafe.Pointer(&s.Album.Images)),
-	}
-}
-
-func (p *Player) YoutubeMusicSong(s youtube.MusicSearchResult) *Song {
-	d, _ := s.Data()
-	format := d.Formats.Type("audio")[0]
-
-	var artists = make([]Artist, len(s.Authors))
-	for i, artist := range s.Authors {
-		artists[i] = Artist{
-			Name: artist.Name,
-			ID:   artist.ID,
-			URL:  fmt.Sprintf("https://music.youtube.com/channel/%s", artist.ID),
-		}
-	}
-
-	return &Song{
-		Video: d, StreamURL: format.URL,
-
-		Name:    s.Title,
-		URL:     fmt.Sprintf("https://youtu.be/%s", s.VideoID),
-		Artists: artists,
-		Album: Artist{
-			Name: s.Album.Name,
-			ID:   s.Album.ID,
-			URL:  fmt.Sprintf("https://music.youtube.com/browse/%s", s.Album.ID),
-		},
-		Thumbnails: *(*[]Thumbnail)(unsafe.Pointer(&s.Thumbnails)),
-
-		Duration: s.Duration,
-		Plays:    s.PlaysViews,
-	}
 }
 
 func (p *Player) AddToQueue(song *Song) {
@@ -192,6 +158,7 @@ func (p *Player) TimeRemainingRaw(ms bool) (float64, error) {
 	return strconv.ParseFloat(p.player.GetPropertyString(cmd), 64)
 }
 
+// Returns the current time position in the song
 func (p *Player) TimePosition(ms bool) (time.Duration, error) {
 	d, err := p.TimePositionRaw(ms)
 	if err != nil {
@@ -205,6 +172,7 @@ func (p *Player) TimePosition(ms bool) (time.Duration, error) {
 	}
 }
 
+// Returns the time remaining for the song
 func (p *Player) TimeRemaining(ms bool) (time.Duration, error) {
 	d, err := p.TimeRemainingRaw(ms)
 	if err != nil {

@@ -1,5 +1,7 @@
 package spotify
 
+import "qusic/util"
+
 type QueryType string
 
 const (
@@ -410,4 +412,32 @@ type SearchObject[T any] struct {
 	Previous string `json:"previous,omitempty"`
 	Total    int    `json:"total"`
 	Items    []T    `json:"items"`
+}
+
+type Lyrics struct {
+	SyncType string `json:"syncType"`
+	Lines    []struct {
+		StartTimeMS util.StringInt `json:"startTimeMs"`
+		Words       string         `json:"words"`
+		Syllables   []any/* idk what type it is */ `json:"syllables"`
+		EndTimeMS   util.StringInt `json:"endTimeMs"`
+	} `json:"lines"`
+	Provider            string `json:"provider"`
+	ProviderLyricsId    string `json:"providerLyricsId"`
+	ProviderDisplayName string `json:"providerDisplayName"`
+	SyncLyricsURI       string `json:"syncLyricsUri"`
+	IsDenseTypeface     bool   `json:"isDenseTypeface"`
+	Alternatives        []any/* again */ `json:"alternatives"`
+	Language            string `json:"language"`
+	IsRTLLanguage       bool   `json:"isRtlLanguage"`
+	FullScreenAction    string `json:"fullScreenAction"`
+	ShowUpsell          bool   `json:"showUpsell"`
+	CapStatus           string `json:"capStatus"`
+	ImpressionRemaining int    `json:"impressionRemaining"`
+	Colors              struct {
+		Background    int `json:"background"`
+		Text          int `json:"text"`
+		HighlightText int `json:"highlightText"`
+	} `json:"colors"`
+	HasVocalRemoval bool `json:"hasVocalRemoval"`
 }

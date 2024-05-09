@@ -58,6 +58,7 @@ var syncedLyrics []lyrics.SyncedLyric
 var searchContent = (fyne.CanvasObject)(container.NewWithoutLayout())
 
 var songProgressSlider *widget.Slider
+var songVolumeSlider *widget.Slider
 
 func durString(dur time.Duration) string {
 	if dur > time.Hour {
@@ -145,6 +146,10 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 	songProgressSlider.Max = float64(song.Duration / time.Millisecond)
 	songProgressSlider.Enable()
+
+	v, _ := player.Volume()
+	songVolumeSlider.SetValue(v)
+	songVolumeSlider.Enable()
 
 	fulld.Segments[0].(*widget.TextSegment).Text = durString(song.Duration)
 	fulld.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
@@ -242,6 +247,9 @@ func main() {
 		songProgressSlider = widget.NewSlider(0, 0)
 		songProgressSlider.Disable()
 
+		songVolumeSlider = widget.NewSlider(0, 100)
+		songVolumeSlider.Disable()
+
 		var p *widget.RichText
 		p, fulld = widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}), widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}})
 		prevf := 0.0
@@ -270,10 +278,26 @@ func main() {
 			prevf = f
 		}
 
+		volumeIcon := widget.NewIcon(theme.VolumeMuteIcon())
+
+		songVolumeSlider.OnChanged = func(f float64) {
+			player.SetVolume(f)
+			switch {
+			case f == 0:
+				volumeIcon.SetResource(theme.VolumeMuteIcon())
+			case f >= 60:
+				volumeIcon.SetResource(theme.VolumeUpIcon())
+			case f < 60:
+				volumeIcon.SetResource(theme.VolumeDownIcon())
+			}
+		}
+
 		progress := container.NewBorder(nil, nil, p, fulld, songProgressSlider)
 		control := container.NewGridWithRows(2, container.NewHBox(layout.NewSpacer(), back, pause, next, layout.NewSpacer()), progress)
 
-		bottom = container.NewGridWithColumns(3, layout.NewSpacer(), control)
+		bottom = container.NewGridWithColumns(3, layout.NewSpacer(), control, container.NewGridWithColumns(2, layout.NewSpacer(),
+			container.NewBorder(nil, nil, volumeIcon, nil, songVolumeSlider),
+		))
 
 		window.SetContent(container.NewBorder(nil,
 			container.NewStack(
@@ -285,12 +309,12 @@ func main() {
 
 		tick := time.NewTicker(time.Millisecond)
 		for {
-			if !player.Playing() {
-				continue
-			}
 			passed, _ := player.TimePosition(false)
 			select {
 			case <-tick.C:
+				if !player.Playing() {
+					continue
+				}
 				if songProgressSlider == nil {
 					continue
 				}
@@ -308,6 +332,40 @@ func main() {
 				}
 				songProgressSlider.SetValue(float64(passed / time.Millisecond))
 			default:
+				if !player.Playing() && player.CurrentIndex() != -1 {
+					q := player.Queue()
+					i := player.CurrentIndex() + 1
+
+					if len(q) <= i && !songended {
+						// stop
+						pause.Disable()
+						next.Disable()
+
+						fulld.Segments[0].(*widget.TextSegment).Text = "-:--"
+						fulld.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameDisabled
+
+						fulld.Refresh()
+
+						p.Segments[0].(*widget.TextSegment).Text = "0:00"
+						p.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameDisabled
+
+						p.Refresh()
+
+						songProgressSlider.Disable()
+						songVolumeSlider.Disable()
+
+						bottom.Objects[0] = layout.NewSpacer()
+						bottom.Refresh()
+
+						lyricsTxt.ParseMarkdown("")
+						songended = true
+						continue
+					}
+
+					// switch to next song
+					play(i, window)
+					continue
+				}
 				if len(syncedLyrics) == 0 {
 					continue
 				}
@@ -334,5 +392,7 @@ func main() {
 	}
 	app.Run()
 }
+
+var songended bool
 
 var resolution = screenresolution.GetPrimary()

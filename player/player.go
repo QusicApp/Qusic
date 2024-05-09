@@ -118,6 +118,8 @@ func New(src Source) *Player {
 		player: mpv.New(),
 		queue:  make([]*Song, 0),
 		Source: src,
+
+		currentSong: -1,
 	}
 }
 
@@ -129,6 +131,14 @@ func (p *Player) Initialize() {
 	p.player.SetOptionString("audio-client-name", "stmp")
 
 	p.player.Initialize()
+}
+
+func (p *Player) Volume() (float64, error) {
+	return strconv.ParseFloat(p.player.GetPropertyString("ao-volume"), 64)
+}
+
+func (p *Player) SetVolume(v float64) error {
+	return p.player.SetPropertyString("ao-volume", fmt.Sprint(v))
 }
 
 func (p *Player) Queue() []*Song {
@@ -234,6 +244,10 @@ func (p *Player) PlayNow(s *Song) error {
 		}
 	}
 	return p.Play(0)
+}
+
+func (p *Player) SetCurrentSong(i int) {
+	p.currentSong = i
 }
 
 func (p *Player) Play(i int) error {

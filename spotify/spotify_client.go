@@ -92,6 +92,7 @@ func (c *Client) Search(query string, typ []QueryType, market countryCode, limit
 	if err != nil {
 		return SearchResult{}, err
 	}
+
 	var result SearchResult
 	err = json.NewDecoder(res.Body).Decode(&result)
 	return result, err

@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -14,9 +15,27 @@ type SongResult struct {
 	Name, Artist, DurationString string
 	Image                        *canvas.Image
 	OnTapped                     func()
+	OptionsOnTapped              func()
+
+	Options *ThreeDotOptions
+}
+
+func (card *SongResult) MouseIn(*desktop.MouseEvent) {
+	card.Options.Show()
+}
+
+func (card *SongResult) MouseMoved(*desktop.MouseEvent) {
+}
+
+func (card *SongResult) MouseOut() {
+	card.Options.Hide()
 }
 
 func (card *SongResult) CreateRenderer() fyne.WidgetRenderer {
+	if card.Options == nil {
+		card.Options = NewThreeDotOptions(card.OptionsOnTapped)
+		card.Options.Hide()
+	}
 	card.ExtendBaseWidget(card)
 
 	card.Image.FillMode = canvas.ImageFillContain
@@ -37,9 +56,13 @@ func (card *SongResult) CreateRenderer() fyne.WidgetRenderer {
 		nil,
 		nil,
 		&ImageButton{Image: card.Image, OnTapped: card.OnTapped},
-		container.NewVBox(layout.NewSpacer(), widget.NewLabelWithStyle(card.DurationString, fyne.TextAlignTrailing, fyne.TextStyle{
-			Monospace: true,
-		}), layout.NewSpacer()),
+		container.NewVBox(layout.NewSpacer(),
+			container.NewBorder(nil, nil,
+				widget.NewLabelWithStyle(card.DurationString, fyne.TextAlignTrailing, fyne.TextStyle{
+					Monospace: true,
+				}),
+				card.Options,
+			), layout.NewSpacer()),
 		text,
 	)
 

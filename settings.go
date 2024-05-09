@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"qusic/logger"
 
 	"fyne.io/fyne/v2"
@@ -8,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -91,13 +93,25 @@ func settingsGeneralTab() fyne.CanvasObject {
 	})
 	hardwareAcceleration.SetChecked(preferences.Bool("hardware_acceleration"))
 
-	img := canvas.NewImageFromResource(resourceQusicPng)
-	img.FillMode = canvas.ImageFillOriginal
-	if preferences.Bool("hardware_acceleration") {
-		img.ScaleMode = canvas.ImageScaleFastest
-	}
-
-	return container.NewVBox(enableDiscordRPC, hideApp, hardwareAcceleration, container.NewCenter(img))
+	return container.NewVBox(
+		enableDiscordRPC,
+		hideApp,
+		hardwareAcceleration,
+		widget.NewRichTextFromMarkdown("## Links"),
+		container.NewHBox(
+			widget.NewHyperlink("GitHub Repository", &url.URL{
+				Scheme: "https",
+				Host:   "github.com",
+				Path:   "oq-x/qusic",
+			}),
+			canvas.NewCircle(theme.ForegroundColor()),
+			widget.NewHyperlink("Discord Server", &url.URL{
+				Scheme: "https",
+				Host:   "discord.gg",
+				Path:   "naVkn4NSXx",
+			}),
+		),
+	)
 }
 
 func settingsLogTab() fyne.CanvasObject {

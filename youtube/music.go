@@ -80,8 +80,7 @@ func (m *MusicClient) Search(query string) (MusicSearchResult, error) {
 	if err != nil {
 		return result, err
 	}
-	i := len(res.Contents.TabbedSearchResultsRenderer.Tabs) - 1
-	contents := res.Contents.TabbedSearchResultsRenderer.Tabs[i].TabRenderer.Content.SectionListRenderer.Contents
+	contents := res.Contents.TabbedSearchResultsRenderer.Tabs.Title("YT Music").TabRenderer.Content.SectionListRenderer.Contents
 
 	top := contents[0].MusicCardShelfRenderer
 	result.TopResult = Video{
@@ -134,9 +133,57 @@ func (m *MusicClient) Search(query string) (MusicSearchResult, error) {
 		}
 	}
 
+	if len(result.TopResult.Authors) == 0 {
+		if len(result.Songs) != 0 {
+			result.TopResult = result.Songs[0]
+			result.Songs = result.Songs[1:]
+		} else {
+			result.TopResult = Video{}
+		}
+	}
+
+	videos := contents.Title("Videos")
+	result.Videos = make([]Video, len(videos.MusicShelfRenderer.Contents))
+
+	for i, video := range videos.MusicShelfRenderer.Contents {
+		result.Videos[i] = Video{
+			Thumbnails: video.MusicResponsiveListItemRenderer.Thumbnail.MusicThumbnailRenderer.Thumbnail.Thumbnails,
+			VideoID:    video.MusicResponsiveListItemRenderer.PlaylistItemData.VideoID,
+			Title:      video.MusicResponsiveListItemRenderer.FlexColumns[0].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[0].Text,
+			Authors:    video.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Author(),
+			Duration:   video.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Duration(),
+		}
+
+		multiplier := 1.0
+		if len(video.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs) == 7 {
+			plays := video.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs[4].Text
+			plays = strings.TrimSuffix(plays, " views")
+			if len(plays) == 0 {
+				continue
+			}
+			switch plays[len(plays)-1] {
+			case 'B':
+				multiplier = 10 ^ 9
+				plays = plays[:len(plays)-1]
+			case 'M':
+				multiplier = 10 ^ 6
+				plays = plays[:len(plays)-1]
+			case 'K':
+				multiplier = 10 ^ 3
+				plays = plays[:len(plays)-1]
+			}
+			n, err := strconv.ParseFloat(plays, 64)
+			if err != nil {
+				continue
+			}
+			result.Videos[i].Plays = int(n * multiplier)
+		}
+	}
+
 	return result, nil
 }
 
+// TODO add views
 func (m *MusicClient) SearchVideos(query string) ([]Video, error) {
 	res, err := m.search(query, ParamVideosOnly)
 	if err != nil {
@@ -144,8 +191,7 @@ func (m *MusicClient) SearchVideos(query string) ([]Video, error) {
 	}
 	var results []Video
 
-	i := len(res.Contents.TabbedSearchResultsRenderer.Tabs) - 1
-	for _, song := range res.Contents.TabbedSearchResultsRenderer.Tabs[i].TabRenderer.Content.SectionListRenderer.Contents.Title("Videos").MusicShelfRenderer.Contents {
+	for _, song := range res.Contents.TabbedSearchResultsRenderer.Tabs.Title("YT Music").TabRenderer.Content.SectionListRenderer.Contents.Title("Videos").MusicShelfRenderer.Contents {
 		if len(song.MusicResponsiveListItemRenderer.FlexColumns[1].MusicResponsiveListItemFlexColumnRenderer.Text.Runs) != 5 {
 			continue
 		}
@@ -173,8 +219,7 @@ func (m *MusicClient) SearchSongs(query string) ([]Video, error) {
 		return nil, err
 	}
 
-	i := len(res.Contents.TabbedSearchResultsRenderer.Tabs) - 1
-	content := res.Contents.TabbedSearchResultsRenderer.Tabs[i].TabRenderer.Content.SectionListRenderer.Contents.Title("Songs")
+	content := res.Contents.TabbedSearchResultsRenderer.Tabs.Title("YT Music").TabRenderer.Content.SectionListRenderer.Contents.Title("Songs")
 	var results = make([]Video, len(content.MusicShelfRenderer.Contents))
 	for i, song := range content.MusicShelfRenderer.Contents {
 		results[i] = Video{

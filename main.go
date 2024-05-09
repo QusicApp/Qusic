@@ -88,16 +88,23 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 	syncedLyrics = song.Lyrics.SyncedLyrics
 
+	lyricsScroll.Content = lyricsTxt
+	lyricsScroll.Refresh()
 	if len(syncedLyrics) == 0 {
-		lines := strings.Split(song.Lyrics.PlainLyrics, "\n")
-		lyricsTxt.Segments = make([]widget.RichTextSegment, len(lines))
-		for i, line := range lines {
-			var seg = new(widget.TextSegment)
-			seg.Style.SizeName = theme.SizeNameHeadingText
-			seg.Text = line
-			seg.Style.TextStyle.Bold = false
+		if song.Lyrics.PlainLyrics == "" {
+			lyricsScroll.Content = container.NewCenter(widget.NewRichTextFromMarkdown("# Sorry, no lyrics were found for this song. Maybe try a different source."))
+			lyricsScroll.Refresh()
+		} else {
+			lines := strings.Split(song.Lyrics.PlainLyrics, "\n")
+			lyricsTxt.Segments = make([]widget.RichTextSegment, len(lines))
+			for i, line := range lines {
+				var seg = new(widget.TextSegment)
+				seg.Style.SizeName = theme.SizeNameHeadingText
+				seg.Text = line
+				seg.Style.TextStyle.Bold = false
 
-			lyricsTxt.Segments[i] = seg
+				lyricsTxt.Segments[i] = seg
+			}
 		}
 	} else {
 		lyricsTxt.Segments = make([]widget.RichTextSegment, len(syncedLyrics))
@@ -130,7 +137,10 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	lyricsTxt.Refresh()
 
 	image := song.Thumbnails[0]
-	d, _ := http.Get(image.URL)
+	d, err := http.Get(image.URL)
+	if err != nil {
+		return
+	}
 	img := canvas.NewImageFromReader(d.Body, song.Name)
 
 	songProgressSlider.Max = float64(song.Duration / time.Millisecond)
@@ -187,14 +197,6 @@ func main() {
 
 		tabs.SetTabLocation(container.TabLocationLeading)
 
-		back = widgets.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {
-			if p, _ := player.TimePosition(false); p >= time.Second*2 {
-				player.Seek(0)
-			}
-		})
-		back.Importance = widget.LowImportance
-		back.Disable()
-
 		pause = &widgets.RoundedButton{
 			Icon: theme.MediaPauseIcon(),
 		}
@@ -207,8 +209,29 @@ func main() {
 			}
 		}
 		pause.Disable()
+
+		back = widgets.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {
+			if p, _ := player.TimePosition(false); p >= time.Second*5 {
+				player.Seek(0)
+			} else {
+				i := player.CurrentIndex() - 1
+				if i >= 0 {
+					play(i, window)
+				}
+			}
+		})
+		back.Importance = widget.LowImportance
+		back.Disable()
+
 		next = widgets.NewButtonWithIcon("", theme.MediaSkipNextIcon(), nil)
 		next.Importance = widget.LowImportance
+		next.OnTapped = func() {
+			i := player.CurrentIndex() + 1
+			q := player.Queue()
+			if len(q) > i {
+				play(i, window)
+			}
+		}
 		next.Disable()
 
 		settingsButton = widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
@@ -230,14 +253,16 @@ func main() {
 			p.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
 			p.Refresh()
 			if math.Abs(f-prevf) > 1000 {
-				player.Seek(int(f / 1000))
+				player.SeekRaw(int(f / 1000))
 				cs := player.CurrentSong()
 				var in int
 				for i, lyric := range cs.Lyrics.SyncedLyrics {
 					if lyric.At <= passed {
 						in++
 					}
-					lyricsTxt.Segments[i].(*widget.TextSegment).Style.TextStyle.Bold = lyric.At <= passed
+					if i < len(lyricsTxt.Segments) {
+						lyricsTxt.Segments[i].(*widget.TextSegment).Style.TextStyle.Bold = lyric.At <= passed
+					}
 				}
 				syncedLyrics = cs.Lyrics.SyncedLyrics[in:]
 				lyricsTxt.Refresh()
@@ -307,7 +332,6 @@ func main() {
 			window.Show()
 		})))
 	}
-
 	app.Run()
 }
 

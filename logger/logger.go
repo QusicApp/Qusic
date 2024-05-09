@@ -78,3 +78,23 @@ func Errf(format string, a ...any) {
 	fmt.Fprint(Errors, "[ERROR] ")
 	fmt.Fprintf(Errors, format, a...)
 }
+
+func Fatal(a ...any) {
+	fmt.Fprint(Errors, "[FATAL] ")
+	fmt.Fprintln(Errors, a...)
+}
+
+func Fatalf(format string, a ...any) {
+	fmt.Fprint(Errors, "[FATAL] ")
+	fmt.Fprintf(Errors, format+"\n", a...)
+}
+
+func Fat(a ...any) {
+	fmt.Fprint(Errors, "[FATAL] ")
+	fmt.Fprint(Errors, a...)
+}
+
+func Fatf(format string, a ...any) {
+	fmt.Fprint(Errors, "[FATAL] ")
+	fmt.Fprintf(Errors, format, a...)
+}

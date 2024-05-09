@@ -1,0 +1,62 @@
+name: Build Dynamite
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        go-version: ["1.22.x"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        arch: [amd64, arm64] # Add ARM64 architecture
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Build
+        run: go build -v
+      - name: Upload Go build results linux
+        uses: actions/upload-artifact@v3
+        if: ${{ runner.os == 'Linux' && matrix.arch == 'amd64' }}
+        with:
+          name: Qusic-AMD64-Linux.zip
+          path: qusic
+      - name: Upload Go build results arm64-linux
+        uses: actions/upload-artifact@v3
+        if: ${{ runner.os == 'Linux' && matrix.arch == 'arm64' }}
+        with:
+          name: Qusic-ARM64-Linux.zip
+          path: qusic
+      - name: Upload Go build results windows
+        uses: actions/upload-artifact@v3
+        if: ${{ runner.os == 'Windows' && matrix.arch == 'amd64' }}
+        with:
+          name: Qusic-AMD64-Windows.zip
+          path: qusic.exe
+      - name: Upload Go build results arm64-windows
+        uses: actions/upload-artifact@v3
+        if: ${{ runner.os == 'Windows' && matrix.arch == 'arm64' }}
+        with:
+          name: Qusic-ARM64-Windows.zip
+          path: qusic.exe
+      - name: Upload Go build results macos
+        uses: actions/upload-artifact@v3
+        if: ${{ runner.os == 'macOS' && matrix.arch == 'amd64' }}
+        with:
+          name: Qusic-AMD64-macOS.zip
+          path: qusic
+      - name: Upload Go build results arm64-macos
+        uses: actions/upload-artifact@v3
+        if: ${{ runner.os == 'macOS' && matrix.arch == 'arm64' }}
+        with:
+          name: Qusic-ARM64-macOS.zip
+          path: qusic

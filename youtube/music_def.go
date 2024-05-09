@@ -163,10 +163,21 @@ type tab struct {
 	} `json:"tabRenderer"`
 }
 
+type tabs []tab
+
+func (t tabs) Title(s string) tab {
+	for _, tab := range t {
+		if tab.TabRenderer.Title == s {
+			return tab
+		}
+	}
+	return tab{}
+}
+
 type musicSearchResponse struct {
 	Contents struct {
 		TabbedSearchResultsRenderer struct {
-			Tabs []tab `json:"tabs"`
+			Tabs tabs `json:"tabs"`
 		} `json:"tabbedSearchResultsRenderer"`
 	} `json:"contents"`
 }

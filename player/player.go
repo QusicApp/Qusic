@@ -43,6 +43,25 @@ type SearchResult struct {
 
 type Thumbnails []Thumbnail
 
+func (t Thumbnails) Min() Thumbnail {
+	i := -1
+	x, y := 0, 0
+	for in, thumbnail := range t {
+		if in == 0 {
+			x, y = thumbnail.Width, thumbnail.Height
+			i = 0
+		}
+		if thumbnail.Width < x && thumbnail.Height < y {
+			x, y = thumbnail.Width, thumbnail.Height
+			i = in
+		}
+	}
+	if i == -1 {
+		return Thumbnail{}
+	}
+	return t[i]
+}
+
 func (t Thumbnails) Max() Thumbnail {
 	i := -1
 	x, y := 0, 0
@@ -110,6 +129,14 @@ func (p *Player) Initialize() {
 	p.player.SetOptionString("audio-client-name", "stmp")
 
 	p.player.Initialize()
+}
+
+func (p *Player) Queue() []*Song {
+	return p.queue
+}
+
+func (p *Player) CurrentIndex() int {
+	return p.currentSong
 }
 
 func abs(d time.Duration) time.Duration {
@@ -186,8 +213,12 @@ func (p *Player) TimeRemaining(ms bool) (time.Duration, error) {
 	}
 }
 
-func (p *Player) Seek(absSeconds int) error {
+func (p *Player) SeekRaw(absSeconds int) error {
 	return p.player.Command([]string{"seek", fmt.Sprint(absSeconds), "absolute"})
+}
+
+func (p *Player) Seek(dur time.Duration) error {
+	return p.SeekRaw(int(dur / time.Second))
 }
 
 func (p *Player) ClearQueue() {

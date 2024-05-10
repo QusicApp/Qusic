@@ -28,7 +28,6 @@ func play(i int, w fyne.Window) {
 		return
 	}
 	setPlayedSong(s, w)
-	songended = true
 }
 
 func playnow(so *pl.Song, w fyne.Window) {
@@ -41,7 +40,6 @@ func playnow(so *pl.Song, w fyne.Window) {
 		return
 	}
 	setPlayedSong(so, w)
-	songended = true
 }
 
 func searchPage(w fyne.Window) fyne.CanvasObject {

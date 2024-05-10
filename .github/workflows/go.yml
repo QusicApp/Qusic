@@ -1,4 +1,4 @@
-name: Build Dynamite
+name: Build Qusic
 
 on:
   push:
@@ -22,6 +22,12 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
+      - name: Install dependencies linux
+        if: ${{ runner.os == 'Linux' }}
+        run: apt install libmpv-dev
+      - name: Install dependencies macOS
+        if: ${{ runner.os == 'macOS' }}
+        run: brew install mpv
       - name: Build
         run: go build -v
       - name: Upload Go build results linux

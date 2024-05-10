@@ -129,12 +129,18 @@ func (p *Player) Initialize() {
 	p.player.SetOptionString("terminal", "no")
 	p.player.SetOptionString("demuxer-max-bytes", "30MiB")
 	p.player.SetOptionString("audio-client-name", "stmp")
+	p.player.SetOptionString("keep-open", "yes")
 
 	p.player.Initialize()
 }
 
 func (p *Player) Volume() (float64, error) {
 	return strconv.ParseFloat(p.player.GetPropertyString("ao-volume"), 64)
+}
+
+func (p *Player) EOFReached() bool {
+	eof := p.player.GetPropertyString("eof-reached")
+	return eof == "yes"
 }
 
 func (p *Player) SetVolume(v float64) error {

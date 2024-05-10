@@ -332,11 +332,11 @@ func main() {
 				}
 				songProgressSlider.SetValue(float64(passed / time.Millisecond))
 			default:
-				if !player.Playing() && player.CurrentIndex() != -1 {
+				if player.EOFReached() {
 					q := player.Queue()
 					i := player.CurrentIndex() + 1
 
-					if len(q) <= i && !songended {
+					if len(q) <= i {
 						// stop
 						pause.Disable()
 						next.Disable()
@@ -358,7 +358,6 @@ func main() {
 						bottom.Refresh()
 
 						lyricsTxt.ParseMarkdown("")
-						songended = true
 						continue
 					}
 
@@ -392,7 +391,5 @@ func main() {
 	}
 	app.Run()
 }
-
-var songended bool
 
 var resolution = screenresolution.GetPrimary()

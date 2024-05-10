@@ -45,6 +45,3 @@ jobs:
         with:
           name: Qusic-AMD64-macOS.zip
           path: qusic
-        with:
-          name: Qusic-ARM64-macOS.zip
-          path: qusic

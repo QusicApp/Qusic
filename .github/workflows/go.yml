@@ -9,12 +9,10 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         go-version: ["1.22.x"]
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        arch: [amd64, arm64] # Add ARM64 architecture
 
     steps:
       - uses: actions/checkout@v4
@@ -22,47 +20,52 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
-      - name: Install dependencies linux
-        if: ${{ runner.os == 'Linux' }}
+      - name: Install dependencies
         run:  sudo apt-get update && sudo apt-get install gcc libgl1-mesa-dev libx11-dev xorg-dev libwayland-dev libxkbcommon-dev bc libmpv-dev
-      - name: Install dependencies macOS
-        if: ${{ runner.os == 'macOS' }}
-        run: brew install mpv
-      - name: Build
+      - name: Build linux amd64
         run: go build -v
-      - name: Upload Go build results linux
+      - name: Upload Go build results amd64-linux
         uses: actions/upload-artifact@v3
-        if: ${{ runner.os == 'Linux' && matrix.arch == 'amd64' }}
         with:
           name: Qusic-AMD64-Linux.zip
           path: qusic
+
+      - name: Build linux arm64
+        run: GOARCH=arm64 go build -v
       - name: Upload Go build results arm64-linux
         uses: actions/upload-artifact@v3
-        if: ${{ runner.os == 'Linux' && matrix.arch == 'arm64' }}
         with:
           name: Qusic-ARM64-Linux.zip
           path: qusic
-      - name: Upload Go build results windows
+
+      - name: Build windows amd64
+        run: GOOS=windows go build -v     
+      - name: Upload Go build results amd64-windows
         uses: actions/upload-artifact@v3
-        if: ${{ runner.os == 'Windows' && matrix.arch == 'amd64' }}
         with:
           name: Qusic-AMD64-Windows.zip
           path: qusic.exe
+
+      - name: Build windows arm64
+        run: GOARCH=arm64 GOOS=windows go build -v   
       - name: Upload Go build results arm64-windows
         uses: actions/upload-artifact@v3
-        if: ${{ runner.os == 'Windows' && matrix.arch == 'arm64' }}
         with:
           name: Qusic-ARM64-Windows.zip
           path: qusic.exe
-      - name: Upload Go build results macos
+
+      - name: Build macos amd64
+        run: GOOS=darwin go build -v  
+      - name: Upload Go build results amd64-macos
         uses: actions/upload-artifact@v3
-        if: ${{ runner.os == 'macOS' && matrix.arch == 'amd64' }}
         with:
           name: Qusic-AMD64-macOS.zip
           path: qusic
+
+      - name: Build macos arm64
+        run: GOARCH=arm64 GOOS=darwin go build -v  
       - name: Upload Go build results arm64-macos
         uses: actions/upload-artifact@v3
-        if: ${{ runner.os == 'macOS' && matrix.arch == 'arm64' }}
         with:
           name: Qusic-ARM64-macOS.zip
           path: qusic

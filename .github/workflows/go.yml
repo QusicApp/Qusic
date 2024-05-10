@@ -24,7 +24,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Install dependencies linux
         if: ${{ runner.os == 'Linux' }}
-        run: sudo apt install libmpv-dev
+        run:  sudo apt-get update && sudo apt-get install gcc libgl1-mesa-dev libx11-dev xorg-dev libwayland-dev libxkbcommon-dev bcsudo libmpv-dev
       - name: Install dependencies macOS
         if: ${{ runner.os == 'macOS' }}
         run: brew install mpv

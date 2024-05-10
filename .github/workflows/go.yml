@@ -24,10 +24,10 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Install dependencies linux
         if: ${{ runner.os == 'Linux' }}
-        run: apt install libmpv-dev
+        run: sudo apt install libmpv-dev
       - name: Install dependencies macOS
         if: ${{ runner.os == 'macOS' }}
-        run: brew install mpv
+        run: sudo brew install mpv
       - name: Build
         run: go build -v
       - name: Upload Go build results linux

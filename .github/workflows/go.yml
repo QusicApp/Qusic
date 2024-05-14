@@ -29,43 +29,19 @@ jobs:
         with:
           name: Qusic-AMD64-Linux.zip
           path: qusic
-
-      - name: Build linux arm64
-        run: GOARCH=arm64 go build -v
-      - name: Upload Go build results arm64-linux
-        uses: actions/upload-artifact@v3
-        with:
-          name: Qusic-ARM64-Linux.zip
-          path: qusic
-
+          
       - name: Build windows amd64
-        run: GOOS=windows go build -v     
+        run: CGO_ENABLED=1 GOOS=windows go build -v     
       - name: Upload Go build results amd64-windows
         uses: actions/upload-artifact@v3
         with:
           name: Qusic-AMD64-Windows.zip
           path: qusic.exe
 
-      - name: Build windows arm64
-        run: GOARCH=arm64 GOOS=windows go build -v   
-      - name: Upload Go build results arm64-windows
-        uses: actions/upload-artifact@v3
-        with:
-          name: Qusic-ARM64-Windows.zip
-          path: qusic.exe
-
       - name: Build macos amd64
-        run: GOOS=darwin go build -v  
+        run: CGO_ENABLED=1 GOOS=darwin go build -v  
       - name: Upload Go build results amd64-macos
         uses: actions/upload-artifact@v3
         with:
           name: Qusic-AMD64-macOS.zip
-          path: qusic
-
-      - name: Build macos arm64
-        run: GOARCH=arm64 GOOS=darwin go build -v  
-      - name: Upload Go build results arm64-macos
-        uses: actions/upload-artifact@v3
-        with:
-          name: Qusic-ARM64-macOS.zip
           path: qusic

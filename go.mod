@@ -4,16 +4,22 @@ go 1.22.2
 
 require (
 	fyne.io/fyne/v2 v2.4.6-0.20240427161808-e05c0a509f3d
-	github.com/gen2brain/go-mpv v0.2.2
 	github.com/kkdai/youtube/v2 v2.10.1
 )
 
-require gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
+require (
+	github.com/ebml-go/webm v0.0.0-20221117133942-84fa5245cf70
+	github.com/gopxl/beep v1.4.1
+	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
+	layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32
+)
 
 require (
 	fyne.io/systray v1.10.1-0.20231230205326-d160fd363db9 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/ebitengine/oto/v3 v3.1.0 // indirect
+	github.com/ebml-go/ebml v0.0.0-20160925193348-ca8851a10894 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20240101223322-6e1efdc71b7a // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
@@ -23,6 +29,8 @@ require (
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect
+	github.com/petar/GoLLRB v0.0.0-20130427215148-53be0d36a84c // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rymdport/portal v0.2.2 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect

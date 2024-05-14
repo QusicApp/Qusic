@@ -45,7 +45,6 @@ var (
 )
 
 func init() {
-	player.Initialize()
 	app.Settings().SetTheme(&myTheme{})
 }
 
@@ -79,7 +78,9 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	case "ytmusic":
 		song.Lyrics, err = lyrics.GetSongYTMusic(song.Video.ID)
 	case "genius":
-		song.Lyrics, err = lyrics.GetSongGenius(song.Artists[0].Name, song.Name)
+		song.Lyrics, err = lyrics.GetSongGenius(song.Artists[0].Name, song.Name, preferences.BoolWithFallback("lyrics.hide_info", true))
+	case "lyrics.ovh":
+		song.Lyrics, err = lyrics.GetSongLyricsOVH(song.Artists[0].Name, song.Name, preferences.BoolWithFallback("lyrics.hide_info", true))
 	}
 	if err != nil {
 		logger.Errorf("No lyrics for %s<source:%s,album:%s,artist:%s,duration:%s>:%v", song.Name, source, song.Album.Name, song.Artists[0].Name, song.Duration, err)
@@ -147,10 +148,6 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	songProgressSlider.Max = float64(song.Duration / time.Millisecond)
 	songProgressSlider.Enable()
 
-	v, _ := player.Volume()
-	songVolumeSlider.SetValue(v)
-	songVolumeSlider.Enable()
-
 	fulld.Segments[0].(*widget.TextSegment).Text = durString(song.Duration)
 	fulld.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
 
@@ -216,7 +213,7 @@ func main() {
 		pause.Disable()
 
 		back = widgets.NewButtonWithIcon("", theme.MediaSkipPreviousIcon(), func() {
-			if p, _ := player.TimePosition(false); p >= time.Second*5 {
+			if player.TimePosition() >= time.Second*5 {
 				player.Seek(0)
 			} else {
 				i := player.CurrentIndex() - 1
@@ -247,8 +244,7 @@ func main() {
 		songProgressSlider = widget.NewSlider(0, 0)
 		songProgressSlider.Disable()
 
-		songVolumeSlider = widget.NewSlider(0, 100)
-		songVolumeSlider.Disable()
+		songVolumeSlider = widget.NewSlider(-10, 10)
 
 		var p *widget.RichText
 		p, fulld = widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}), widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}})
@@ -283,11 +279,11 @@ func main() {
 		songVolumeSlider.OnChanged = func(f float64) {
 			player.SetVolume(f)
 			switch {
-			case f == 0:
+			case f == -100:
 				volumeIcon.SetResource(theme.VolumeMuteIcon())
-			case f >= 60:
+			case f >= 100:
 				volumeIcon.SetResource(theme.VolumeUpIcon())
-			case f < 60:
+			case f < 100:
 				volumeIcon.SetResource(theme.VolumeDownIcon())
 			}
 		}
@@ -305,11 +301,11 @@ func main() {
 				container.NewPadded(bottom),
 			), nil, container.NewVBox(settingsButton), tabs))
 		window.Resize(fyne.NewSize(float32(resolution.Width)/1.5, float32(resolution.Height)/1.5))
+
 		window.Show()
 
 		tick := time.NewTicker(time.Millisecond)
 		for {
-			passed, _ := player.TimePosition(false)
 			select {
 			case <-tick.C:
 				if !player.Playing() {
@@ -318,6 +314,7 @@ func main() {
 				if songProgressSlider == nil {
 					continue
 				}
+				passed := player.TimePosition()
 				cs := player.CurrentSong()
 				if preferences.Bool("discord_rpc") {
 					rpc.SetActivity(discordrpc.Activity{
@@ -368,6 +365,7 @@ func main() {
 				if len(syncedLyrics) == 0 {
 					continue
 				}
+				passed := player.TimePosition()
 				lyric := syncedLyrics[0]
 				if lyric.At <= passed {
 					lyricsTxt.Segments[lyric.Index].(*widget.TextSegment).Style.TextStyle.Bold = true

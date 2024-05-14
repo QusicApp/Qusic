@@ -135,7 +135,36 @@ var sources = map[string]int{
 	"spotify": 1,
 }
 
+var lsources = map[string]int{
+	"lrclib":     0,
+	"ytmusic":    1,
+	"genius":     2,
+	"lyrics.ovh": 3,
+}
+
+var dsources = map[string]int{
+	"youtube": 0,
+	"cobalt":  1,
+}
+
 func settingsSourcesTab() fyne.CanvasObject {
+	dsel := widget.NewSelect([]string{
+		"YouTube",
+		"Cobalt",
+	}, nil)
+	dsel.OnChanged = func(s string) {
+		i := dsel.SelectedIndex()
+		switch i {
+		case 0:
+			s = "youtube"
+		case 1:
+			s = "cobalt"
+		default:
+			return
+		}
+		preferences.SetString("download.source", s)
+	}
+	dsel.SetSelectedIndex(lsources[preferences.StringWithFallback("download.source", "youtube")])
 	sel := widget.NewSelect([]string{
 		"YouTube Music",
 		"Spotify",
@@ -159,12 +188,13 @@ func settingsSourcesTab() fyne.CanvasObject {
 	ytmusicSV := widget.NewCheck("Show video results", func(b bool) {
 		preferences.SetBool("ytmusic.show_video_results", b)
 	})
-	ytmusicSV.SetChecked(preferences.BoolWithFallback("ytmusic.show_video_results", true))
+	ytmusicSV.SetChecked(preferences.Bool("ytmusic.show_video_results"))
 
 	lyricsSel := widget.NewSelect([]string{
 		"LRCLIB (Synced)",
 		"YouTube Music",
 		"Genius",
+		"Lyrics.ovh",
 	}, nil)
 	lyricsSel.OnChanged = func(s string) {
 		i := lyricsSel.SelectedIndex()
@@ -175,26 +205,28 @@ func settingsSourcesTab() fyne.CanvasObject {
 			s = "ytmusic"
 		case 2:
 			s = "genius"
+		case 3:
+			s = "lyrics.ovh"
 		default:
 			return
 		}
 		preferences.SetString("lyrics.source", s)
 	}
 	lyricsSel.SetSelectedIndex(lsources[preferences.StringWithFallback("lyrics.source", "lrclib")])
+	lyricsHI := widget.NewCheck("Hide information lyrics", func(b bool) {
+		preferences.SetBool("lyrics.hide_info", b)
+	})
+	lyricsHI.SetChecked(preferences.BoolWithFallback("lyrics.hide_info", true))
 
 	return container.NewVBox(
 		container.NewBorder(nil, nil, widget.NewLabel("Selected Source"), nil, container.NewGridWithColumns(3, sel)),
+		container.NewBorder(nil, nil, widget.NewLabel("Selected Download Source"), nil, container.NewGridWithColumns(3, dsel)),
 		container.NewBorder(nil, nil, widget.NewLabel("Selected Lyric Source"), nil, container.NewGridWithColumns(3, lyricsSel)),
+		lyricsHI,
 
 		widget.NewRichTextFromMarkdown("# YouTube Music"),
 		ytmusicSV,
 	)
-}
-
-var lsources = map[string]int{
-	"lrclib":  0,
-	"ytmusic": 1,
-	"genius":  2,
 }
 
 func settings(w fyne.Window) {

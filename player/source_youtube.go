@@ -14,8 +14,7 @@ type YouTubeMusicSource struct {
 
 func (source YouTubeMusicSource) GetVideo(s *Song) {
 	s.Video, _ = ytclient.GetVideo(s.URL)
-	s.StreamURL = s.Video.Formats.Type("audio")[0].URL
-	//fmt.Println(s.StreamURL)
+	s.Format = &s.Video.Formats.Type("audio/webm; codecs=\"opus\"")[0]
 }
 
 func (source YouTubeMusicSource) Search(query string) SearchResult {

@@ -21,7 +21,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       - name: Install dependencies
-        run:  sudo apt-get update && sudo apt-get install gcc libgl1-mesa-dev libx11-dev xorg-dev libwayland-dev libxkbcommon-dev bc libmpv-dev
+        run:  sudo apt-get update && sudo apt-get install gcc libgl1-mesa-dev libx11-dev xorg-dev libwayland-dev libxkbcommon-dev bc
       - name: Build linux amd64
         run: go build -v
       - name: Upload Go build results amd64-linux

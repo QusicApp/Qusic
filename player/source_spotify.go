@@ -11,7 +11,7 @@ import (
 	yt "github.com/kkdai/youtube/v2"
 )
 
-var ytclient = new(yt.Client)
+var ytclient yt.Client
 
 func NewSpotifySource() SpotifySource {
 	return SpotifySource{client: spotify.New()}
@@ -33,7 +33,7 @@ func (source SpotifySource) GetVideo(s *Song) {
 	}
 
 	if vid == nil {
-		return
+		vid = &v[0]
 	}
 
 	video, err := ytclient.GetVideo(vid.VideoID)
@@ -41,7 +41,7 @@ func (source SpotifySource) GetVideo(s *Song) {
 		return
 	}
 	s.Video = video
-	s.StreamURL = video.Formats.Type("audio")[0].URL
+	s.Format = &video.Formats.Type("audio/webm; codecs=\"opus\"")[0]
 }
 
 func (source SpotifySource) Search(query string) SearchResult {

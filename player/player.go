@@ -1,14 +1,13 @@
 package player
 
 import (
-	"fmt"
+	"io"
 	"qusic/lyrics"
-	"strconv"
+	"qusic/streamer"
 	"time"
 
+	"github.com/gopxl/beep/speaker"
 	yt "github.com/kkdai/youtube/v2"
-
-	"github.com/gen2brain/go-mpv"
 )
 
 type Named struct {
@@ -83,8 +82,9 @@ const (
 )
 
 type Song struct {
-	Video     *yt.Video
-	StreamURL string
+	Video  *yt.Video
+	Format *yt.Format
+	//StreamURL string
 
 	Provider int
 
@@ -106,45 +106,39 @@ type Source interface {
 
 type Player struct {
 	Source
-	player *mpv.Mpv
-	queue  []*Song
+	queue []*Song
 
 	paused      bool
 	currentSong int
+
+	streamer *streamer.Streamer
 }
 
 func New(src Source) *Player {
-	return &Player{
-		player: mpv.New(),
+	p := &Player{
 		queue:  make([]*Song, 0),
 		Source: src,
 
+		streamer: streamer.NewStreamer(),
+
 		currentSong: -1,
 	}
+
+	speaker.Init(streamer.SampleRate, streamer.SampleRate.N(time.Second/10))
+
+	return p
 }
 
-func (p *Player) Initialize() {
-	p.player.SetOptionString("audio-display", "no")
-	p.player.SetOptionString("video", "no")
-	p.player.SetOptionString("terminal", "no")
-	p.player.SetOptionString("demuxer-max-bytes", "30MiB")
-	p.player.SetOptionString("audio-client-name", "stmp")
-	p.player.SetOptionString("keep-open", "yes")
-
-	p.player.Initialize()
-}
-
-func (p *Player) Volume() (float64, error) {
-	return strconv.ParseFloat(p.player.GetPropertyString("ao-volume"), 64)
+func (p *Player) Volume() float64 {
+	return p.streamer.Volume()
 }
 
 func (p *Player) EOFReached() bool {
-	eof := p.player.GetPropertyString("eof-reached")
-	return eof == "yes"
+	return p.streamer.Err() == io.EOF
 }
 
-func (p *Player) SetVolume(v float64) error {
-	return p.player.SetPropertyString("ao-volume", fmt.Sprint(v))
+func (p *Player) SetVolume(v float64) {
+	p.streamer.SetVolume(v)
 }
 
 func (p *Player) Queue() []*Song {
@@ -168,7 +162,8 @@ func (p *Player) AddToQueue(song *Song) {
 
 func (p *Player) PauseCycle() error {
 	p.paused = !p.paused
-	return p.player.Command([]string{"cycle", "pause"})
+	p.streamer.SetPaused(p.paused)
+	return nil
 }
 
 func (p *Player) Paused() bool {
@@ -180,61 +175,40 @@ func (p *Player) CurrentSong() *Song {
 }
 
 func (p *Player) Playing() bool {
-	return p.player.GetPropertyString("filename") != ""
+	return p.currentSong != -1
 }
 
-// Returns the time position in seconds (or in milliseconds in if ms is true)
-func (p *Player) TimePositionRaw(ms bool) (float64, error) {
-	cmd := "time-pos"
-	if ms {
-		cmd += "/full"
-	}
-	return strconv.ParseFloat(p.player.GetPropertyString(cmd), 64)
+func (p *Player) postodur(pos int) time.Duration {
+	//smp, _ := strconv.Atoi(p.CurrentSong().Format.AudioSampleRate)
+
+	return streamer.SampleRate.D(pos)
 }
 
-// Returns the time remaining in seconds (or in milliseconds in if ms is true)
-func (p *Player) TimeRemainingRaw(ms bool) (float64, error) {
-	cmd := "time-remaining"
-	if ms {
-		cmd += "/full"
-	}
-	return strconv.ParseFloat(p.player.GetPropertyString(cmd), 64)
+func (p *Player) durtopos(dur time.Duration) int {
+	//smp, _ := strconv.Atoi(p.CurrentSong().Format.AudioSampleRate)
+
+	return streamer.SampleRate.N(dur)
 }
 
 // Returns the current time position in the song
-func (p *Player) TimePosition(ms bool) (time.Duration, error) {
-	d, err := p.TimePositionRaw(ms)
-	if err != nil {
-		return 0, err
-	}
-	dur := time.Duration(d)
-	if ms {
-		return dur * time.Millisecond, nil
-	} else {
-		return dur * time.Second, nil
-	}
+func (p *Player) TimePosition() time.Duration {
+	return p.postodur(p.streamer.Position())
 }
 
 // Returns the time remaining for the song
-func (p *Player) TimeRemaining(ms bool) (time.Duration, error) {
-	d, err := p.TimeRemainingRaw(ms)
-	if err != nil {
-		return 0, err
-	}
-	dur := time.Duration(d)
-	if ms {
-		return dur * time.Millisecond, nil
-	} else {
-		return dur * time.Second, nil
-	}
+func (p *Player) TimeRemaining(ms bool) time.Duration {
+	pos := p.TimePosition()
+	l := p.postodur(p.streamer.Len())
+
+	return l - pos
 }
 
-func (p *Player) SeekRaw(absSeconds int) error {
-	return p.player.Command([]string{"seek", fmt.Sprint(absSeconds), "absolute"})
+func (p *Player) SeekRaw(pos int) error {
+	return p.streamer.Seek(pos)
 }
 
 func (p *Player) Seek(dur time.Duration) error {
-	return p.SeekRaw(int(dur / time.Second))
+	return p.SeekRaw(p.durtopos(dur))
 }
 
 func (p *Player) ClearQueue() {
@@ -260,11 +234,18 @@ func (p *Player) Play(i int) error {
 	if i < 0 || len(p.queue) < i {
 		return nil
 	}
+	streamer, _, err := streamer.New(p.queue[i].Video, p.queue[i].Format, 0)
 
-	if err := p.player.Command([]string{"loadfile", p.queue[i].StreamURL}); err != nil {
+	if err != nil {
 		return err
 	}
 
 	p.currentSong = i
+
+	speaker.Clear()
+
+	p.streamer.SetStreamer(streamer)
+	speaker.Play(streamer)
+
 	return nil
 }

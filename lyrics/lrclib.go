@@ -58,7 +58,7 @@ func parseSyncedLyrics(str string) []SyncedLyric {
 
 func SearchSongLRCLIB(trackName, artistName, albumName string) (Song, error) {
 	s := Song{LyricSource: "LRCLIB"}
-	req, _ := http.NewRequest("GET", fmt.Sprintf("https://lrclib.net/api/search?track_name=%s&artist_name=%s&album_name=%s",
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("https://lrclib.net/api/search?track_name=%s&artist_name=%s&album_name=%s",
 		url.QueryEscape(trackName),
 		url.QueryEscape(artistName),
 		url.QueryEscape(albumName),
@@ -87,7 +87,7 @@ func GetSongLRCLIB(trackName, artistName, albumName string, duration time.Durati
 	if cached {
 		c = "-cached"
 	}
-	req, _ := http.NewRequest("GET", fmt.Sprintf("https://lrclib.net/api/get%s?track_name=%s&artist_name=%s&album_name=%s&duration=%d",
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("https://lrclib.net/api/get%s?track_name=%s&artist_name=%s&album_name=%s&duration=%d",
 		c,
 		url.QueryEscape(trackName),
 		url.QueryEscape(artistName),

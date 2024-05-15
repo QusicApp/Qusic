@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"math"
 	"net/http"
+	"qusic/cobalt"
 	discordrpc "qusic/discord-rpc"
 	"qusic/logger"
 	"qusic/lyrics"
@@ -23,7 +24,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/fstanis/screenresolution"
 )
 
 var youtubeSource pl.YouTubeMusicSource
@@ -78,9 +78,9 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	case "ytmusic":
 		song.Lyrics, err = lyrics.GetSongYTMusic(song.Video.ID)
 	case "genius":
-		song.Lyrics, err = lyrics.GetSongGenius(song.Artists[0].Name, song.Name, preferences.BoolWithFallback("lyrics.hide_info", true))
+		song.Lyrics, err = lyrics.GetSongGenius(song.Artists[0].Name, song.Name)
 	case "lyrics.ovh":
-		song.Lyrics, err = lyrics.GetSongLyricsOVH(song.Artists[0].Name, song.Name, preferences.BoolWithFallback("lyrics.hide_info", true))
+		song.Lyrics, err = lyrics.GetSongLyricsOVH(song.Artists[0].Name, song.Name)
 	}
 	if err != nil {
 		logger.Errorf("No lyrics for %s<source:%s,album:%s,artist:%s,duration:%s>:%v", song.Name, source, song.Album.Name, song.Artists[0].Name, song.Duration, err)
@@ -170,6 +170,9 @@ func main() {
 	if preferences.String("source") == "spotify" {
 		player.Source = spotifySource
 	}
+	if preferences.String("download.source") == "cobalt" {
+		player.Downloader = cobalt.New
+	}
 
 	app.SetIcon(resourceQusicPng)
 	var window fyne.Window
@@ -257,7 +260,7 @@ func main() {
 			p.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
 			p.Refresh()
 			if math.Abs(f-prevf) > 1000 {
-				player.SeekRaw(int(f / 1000))
+				player.Seek(time.Duration(f) * time.Millisecond)
 				cs := player.CurrentSong()
 				var in int
 				for i, lyric := range cs.Lyrics.SyncedLyrics {
@@ -279,11 +282,11 @@ func main() {
 		songVolumeSlider.OnChanged = func(f float64) {
 			player.SetVolume(f)
 			switch {
-			case f == -100:
+			case f == -10:
 				volumeIcon.SetResource(theme.VolumeMuteIcon())
-			case f >= 100:
+			case f >= 0:
 				volumeIcon.SetResource(theme.VolumeUpIcon())
-			case f < 100:
+			case f < 0:
 				volumeIcon.SetResource(theme.VolumeDownIcon())
 			}
 		}
@@ -300,7 +303,11 @@ func main() {
 				canvas.NewRectangle(color.Black),
 				container.NewPadded(bottom),
 			), nil, container.NewVBox(settingsButton), tabs))
-		window.Resize(fyne.NewSize(float32(resolution.Width)/1.5, float32(resolution.Height)/1.5))
+
+		size := window.Content().MinSize()
+		size.Width *= 2.8
+		size.Height *= 4
+		window.Resize(size)
 
 		window.Show()
 
@@ -328,8 +335,27 @@ func main() {
 					})
 				}
 				songProgressSlider.SetValue(float64(passed / time.Millisecond))
-			default:
-				if player.EOFReached() {
+
+				if len(syncedLyrics) == 0 {
+					continue
+				}
+				lyric := syncedLyrics[0]
+				if lyric.At <= passed {
+					lyricsTxt.Segments[lyric.Index].(*widget.TextSegment).Style.TextStyle.Bold = true
+					lyricsTxt.Refresh()
+					if len(syncedLyrics) == 0 {
+						continue
+					}
+					syncedLyrics = syncedLyrics[1:]
+
+					dy := lyricsScroll.Offset.Y - (float32(lyric.Index) * theme.TextHeadingSize())
+
+					lyricsScroll.Scrolled(&fyne.ScrollEvent{
+						Scrolled: fyne.NewDelta(0, dy),
+					})
+				}
+			case <-player.SongFinished:
+				{
 					q := player.Queue()
 					i := player.CurrentIndex() + 1
 
@@ -362,22 +388,6 @@ func main() {
 					play(i, window)
 					continue
 				}
-				if len(syncedLyrics) == 0 {
-					continue
-				}
-				passed := player.TimePosition()
-				lyric := syncedLyrics[0]
-				if lyric.At <= passed {
-					lyricsTxt.Segments[lyric.Index].(*widget.TextSegment).Style.TextStyle.Bold = true
-					lyricsTxt.Refresh()
-					syncedLyrics = syncedLyrics[1:]
-
-					dy := lyricsScroll.Offset.Y - (float32(lyric.Index) * theme.TextHeadingSize())
-
-					lyricsScroll.Scrolled(&fyne.ScrollEvent{
-						Scrolled: fyne.NewDelta(0, dy),
-					})
-				}
 			}
 		}
 	})
@@ -389,5 +399,3 @@ func main() {
 	}
 	app.Run()
 }
-
-var resolution = screenresolution.GetPrimary()

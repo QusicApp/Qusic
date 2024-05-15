@@ -2,7 +2,9 @@ package main
 
 import (
 	"net/url"
+	"qusic/cobalt"
 	"qusic/logger"
+	"qusic/streamer"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -147,24 +149,13 @@ var dsources = map[string]int{
 	"cobalt":  1,
 }
 
+var formats = map[string]int{
+	//"wav": 0,
+	//"mp3": 1,
+	"ogg": 0,
+}
+
 func settingsSourcesTab() fyne.CanvasObject {
-	dsel := widget.NewSelect([]string{
-		"YouTube",
-		"Cobalt",
-	}, nil)
-	dsel.OnChanged = func(s string) {
-		i := dsel.SelectedIndex()
-		switch i {
-		case 0:
-			s = "youtube"
-		case 1:
-			s = "cobalt"
-		default:
-			return
-		}
-		preferences.SetString("download.source", s)
-	}
-	dsel.SetSelectedIndex(lsources[preferences.StringWithFallback("download.source", "youtube")])
 	sel := widget.NewSelect([]string{
 		"YouTube Music",
 		"Spotify",
@@ -213,19 +204,64 @@ func settingsSourcesTab() fyne.CanvasObject {
 		preferences.SetString("lyrics.source", s)
 	}
 	lyricsSel.SetSelectedIndex(lsources[preferences.StringWithFallback("lyrics.source", "lrclib")])
-	lyricsHI := widget.NewCheck("Hide information lyrics", func(b bool) {
-		preferences.SetBool("lyrics.hide_info", b)
-	})
-	lyricsHI.SetChecked(preferences.BoolWithFallback("lyrics.hide_info", true))
 
 	return container.NewVBox(
-		container.NewBorder(nil, nil, widget.NewLabel("Selected Source"), nil, container.NewGridWithColumns(3, sel)),
-		container.NewBorder(nil, nil, widget.NewLabel("Selected Download Source"), nil, container.NewGridWithColumns(3, dsel)),
+		widget.NewRichTextFromMarkdown("# Sources"),
+		container.NewBorder(nil, nil, widget.NewLabel("Selected Music Source"), nil, container.NewGridWithColumns(3, sel)),
 		container.NewBorder(nil, nil, widget.NewLabel("Selected Lyric Source"), nil, container.NewGridWithColumns(3, lyricsSel)),
-		lyricsHI,
 
-		widget.NewRichTextFromMarkdown("# YouTube Music"),
+		widget.NewRichTextFromMarkdown("## YouTube Music"),
 		ytmusicSV,
+	)
+}
+
+func settingsDownloadTab() fyne.CanvasObject {
+	dsel := widget.NewSelect([]string{
+		"YouTube",
+		"Cobalt",
+	}, nil)
+	dsel.OnChanged = func(s string) {
+		i := dsel.SelectedIndex()
+		switch i {
+		case 0:
+			s = "youtube"
+			player.Downloader = streamer.New
+		case 1:
+			s = "cobalt"
+			player.Downloader = cobalt.New
+		default:
+			return
+		}
+		preferences.SetString("download.source", s)
+	}
+	dsel.SetSelectedIndex(dsources[preferences.StringWithFallback("download.source", "youtube")])
+
+	aformatsel := widget.NewSelect([]string{
+		//"WAV",
+		//"MP3",
+		"OGG/Vorbis",
+	}, nil)
+	aformatsel.OnChanged = func(s string) {
+		i := aformatsel.SelectedIndex()
+		switch i {
+		//case 0:
+		//	s = "wav"
+		//case 1:
+		//	s = "mp3"
+		case 0:
+			s = "ogg"
+		default:
+			return
+		}
+		preferences.SetString("download.cobalt.format", s)
+	}
+	aformatsel.SetSelectedIndex(formats[preferences.StringWithFallback("download.cobalt.format", "wav")])
+
+	return container.NewVBox(
+		widget.NewRichTextFromMarkdown("# Downloading"),
+		container.NewBorder(nil, nil, widget.NewLabel("Selected Download Source"), nil, container.NewGridWithColumns(3, dsel)),
+		widget.NewRichTextFromMarkdown("## Cobalt"),
+		container.NewBorder(nil, nil, widget.NewLabel("Selected Audio Format"), nil, container.NewGridWithColumns(3, aformatsel)),
 	)
 }
 
@@ -237,6 +273,7 @@ func settings(w fyne.Window) {
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", settingsGeneralTab()),
 		container.NewTabItem("Sources", settingsSourcesTab()),
+		container.NewTabItem("Download", settingsDownloadTab()),
 		container.NewTabItem("Log", settingsLogTab()),
 	)
 
@@ -247,7 +284,11 @@ func settings(w fyne.Window) {
 	), nil, nil, tabs)
 
 	settingsDialog = dialog.NewCustomWithoutButtons("Settings", b, w)
-	settingsDialog.Resize(fyne.NewSize(float32(resolution.Width)/2, float32(resolution.Height)/2))
+
+	size := settingsDialog.MinSize()
+	size.Width *= 1.5
+	size.Height *= 1.2
+	settingsDialog.Resize(size)
 
 	settingsDialog.Show()
 }

@@ -84,7 +84,7 @@ func (c *Client) Search(query string, typ []QueryType, market countryCode, limit
 	if includeExternalAudio {
 		url += "&include_external=audio"
 	}
-	req, err := c.newRequest("GET", url, false)
+	req, err := c.newRequest(http.MethodGet, url, false)
 	if err != nil {
 		return SearchResult{}, err
 	}
@@ -100,7 +100,7 @@ func (c *Client) Search(query string, typ []QueryType, market countryCode, limit
 
 // WIP: this is useless until I find a proper way to get client tokens
 func (c *Client) Lyrics(trackId string) (Lyrics, error) {
-	req, err := c.newRequest("GET",
+	req, err := c.newRequest(http.MethodGet,
 		fmt.Sprintf("https://spclient.wg.spotify.com/color-lyrics/v2/track/%s?format=json&vocalRemoval=false&market=from_token", url.PathEscape(trackId)),
 		true,
 	)

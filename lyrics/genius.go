@@ -25,7 +25,7 @@ type Song struct {
 
 var ErrNotFound = errors.New("not found song")
 
-func GetSongGenius(artistName, trackName string, hideInfo bool) (Song, error) {
+func GetSongGenius(artistName, trackName string) (Song, error) {
 	s := Song{LyricSource: "Genius"}
 	artistName = strings.ReplaceAll(artistName, " ", "-")
 	artistName = strings.ReplaceAll(artistName, "!", "")
@@ -88,7 +88,7 @@ func GetSongGenius(artistName, trackName string, hideInfo bool) (Song, error) {
 				i1 := strings.Index(l, "<")
 				i2 := strings.Index(l[:i1], ">")
 				lyric := l[:i1][i2+1:]
-				if lyric[0] == '[' && hideInfo {
+				if lyric[0] == '[' {
 					continue
 				}
 				lyric = strings.ReplaceAll(lyric, "\\nn", "\n")

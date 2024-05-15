@@ -1,11 +1,11 @@
 package player
 
 import (
-	"io"
 	"qusic/lyrics"
 	"qusic/streamer"
 	"time"
 
+	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/speaker"
 	yt "github.com/kkdai/youtube/v2"
 )
@@ -84,7 +84,6 @@ const (
 type Song struct {
 	Video  *yt.Video
 	Format *yt.Format
-	//StreamURL string
 
 	Provider int
 
@@ -112,6 +111,10 @@ type Player struct {
 	currentSong int
 
 	streamer *streamer.Streamer
+
+	SongFinished chan struct{}
+
+	Downloader func(video *yt.Video) (beep.StreamSeekCloser, beep.Format, error)
 }
 
 func New(src Source) *Player {
@@ -122,6 +125,10 @@ func New(src Source) *Player {
 		streamer: streamer.NewStreamer(),
 
 		currentSong: -1,
+
+		SongFinished: make(chan struct{}),
+
+		Downloader: streamer.New,
 	}
 
 	speaker.Init(streamer.SampleRate, streamer.SampleRate.N(time.Second/10))
@@ -131,10 +138,6 @@ func New(src Source) *Player {
 
 func (p *Player) Volume() float64 {
 	return p.streamer.Volume()
-}
-
-func (p *Player) EOFReached() bool {
-	return p.streamer.Err() == io.EOF
 }
 
 func (p *Player) SetVolume(v float64) {
@@ -179,15 +182,12 @@ func (p *Player) Playing() bool {
 }
 
 func (p *Player) postodur(pos int) time.Duration {
-	//smp, _ := strconv.Atoi(p.CurrentSong().Format.AudioSampleRate)
-
 	return streamer.SampleRate.D(pos)
 }
 
 func (p *Player) durtopos(dur time.Duration) int {
-	//smp, _ := strconv.Atoi(p.CurrentSong().Format.AudioSampleRate)
-
-	return streamer.SampleRate.N(dur)
+	n := streamer.SampleRate.N(dur)
+	return n
 }
 
 // Returns the current time position in the song
@@ -234,7 +234,7 @@ func (p *Player) Play(i int) error {
 	if i < 0 || len(p.queue) < i {
 		return nil
 	}
-	streamer, _, err := streamer.New(p.queue[i].Video, p.queue[i].Format, 0)
+	streamer, _, err := p.Downloader(p.queue[i].Video)
 
 	if err != nil {
 		return err
@@ -245,7 +245,9 @@ func (p *Player) Play(i int) error {
 	speaker.Clear()
 
 	p.streamer.SetStreamer(streamer)
-	speaker.Play(streamer)
+	speaker.Play(beep.Seq(p.streamer, beep.Callback(func() {
+		p.SongFinished <- struct{}{}
+	})))
 
 	return nil
 }

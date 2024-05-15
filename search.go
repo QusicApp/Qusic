@@ -21,7 +21,7 @@ func play(i int, w fyne.Window) {
 	s := q[i]
 	player.GetVideo(s)
 
-	logger.Inff("Playing song %s: ", s.Name)
+	logger.Inff("Playing song %s (%s): ", s.Name, preferences.StringWithFallback("download.source", "youtube"))
 	err := player.Play(i)
 	logger.Println(err)
 	if err != nil {
@@ -33,7 +33,7 @@ func play(i int, w fyne.Window) {
 func playnow(so *pl.Song, w fyne.Window) {
 	player.GetVideo(so)
 
-	logger.Inff("Playing song %s: ", so.Name)
+	logger.Inff("Playing song %s (%s): ", so.Name, preferences.StringWithFallback("download.source", "youtube"))
 	err := player.PlayNow(so)
 	logger.Println(err)
 	if err != nil {

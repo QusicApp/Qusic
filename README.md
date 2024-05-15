@@ -11,7 +11,6 @@ Free music app written in Go
 
 ### Build from source
 1. Download [Go](https://go.dev)
-2. Download [MPV](https://mpv.io) (use [MSYS2](https://www.msys2.org/) for Windows)
 3. Download the project, and run `go build`
 
 ## Screenshots

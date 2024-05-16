@@ -23,7 +23,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       - name: Get dependencies
-        run: sudo apt-get update && sudo apt-get install gcc libgl1-mesa-dev libx11-dev xorg-dev libwayland-dev libxkbcommon-dev bc
+        run: sudo apt-get update && sudo apt-get install gcc libgl1-mesa-dev libx11-dev xorg-dev libwayland-dev libxkbcommon-dev bc alsa-tools
         if: ${{ runner.os == 'Linux' }}
       - name: Install Homebrew (macOS)
         run: |

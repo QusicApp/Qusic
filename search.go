@@ -1,7 +1,10 @@
 package main
 
 import (
+	_ "image/png"
+
 	"fmt"
+	"image"
 	"net/http"
 	"qusic/logger"
 	"qusic/widgets"
@@ -14,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/tufteddeer/go-circleimage"
 )
 
 func play(i int, w fyne.Window) {
@@ -70,9 +74,8 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 			songList := container.NewVBox(songsTxt)
 			for i, s := range results.Songs {
 				song := s
-				image := song.Thumbnails.Min()
-				d, _ := http.Get(image.URL)
-				img := canvas.NewImageFromReader(d.Body, song.Name)
+
+				img := canvas.NewImageFromImage(getImg(song.Thumbnails.Min().URL))
 				img.SetMinSize(fyne.NewSize(48, 48))
 				if preferences.Bool("hardware_acceleration") {
 					img.ScaleMode = canvas.ImageScaleFastest
@@ -172,4 +175,18 @@ func artistText(s []pl.Artist) string {
 		}
 	}
 	return str
+}
+
+func getImg(url string) image.Image {
+	d, err := http.Get(url)
+	if err != nil {
+		return nil
+	}
+	defer d.Body.Close()
+	img, _, _ := image.Decode(d.Body)
+	return img
+}
+
+func circleImage(img image.Image) image.Image {
+	return circleimage.CircleImage(img, image.Point{img.Bounds().Dx() / 2, img.Bounds().Dy() / 2}, 30)
 }

@@ -34,7 +34,7 @@ func GetSongLyricsOVH(artist, title string) (Song, error) {
 		if s.PlainLyrics[i1+1] == '\n' {
 			i1++
 		}
-		s.PlainLyrics = s.PlainLyrics[i-1 : i1+1]
+		s.PlainLyrics = string(append([]byte(s.PlainLyrics[:i]), s.PlainLyrics[i1+1:]...))
 	}
 	return s, nil
 }

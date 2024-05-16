@@ -26,7 +26,7 @@ func (source SpotifySource) GetVideo(s *Song) {
 
 	var vid *youtube.Video
 	for _, video := range v {
-		if abs(video.Duration-s.Duration) <= 2*time.Second {
+		if abs(video.Duration-s.Duration) <= 2*time.Second && strings.Contains(s.Name, video.Title) {
 			vid = &video
 			break
 		}

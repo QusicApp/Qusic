@@ -1,6 +1,9 @@
 package lyrics
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -137,4 +140,126 @@ func GetSongLRCLIB(trackName, artistName, albumName string, duration time.Durati
 	}
 
 	return s, err
+}
+
+func PublishSongLRCLIB(
+	trackName, artistName, albumName string, duration time.Duration, plainLyrics string, syncedLyrics []SyncedLyric, token string,
+) error {
+	var data = map[string]any{
+		"trackName":    trackName,
+		"artistName":   artistName,
+		"albumName":    albumName,
+		"duration":     duration / time.Second,
+		"plainLyrics":  plainLyrics,
+		"syncedLyrics": "",
+	}
+	minutes := int(duration.Minutes())
+	seconds := duration.Seconds()
+	for i, lyric := range syncedLyrics {
+		newline := ""
+		if i != len(syncedLyrics)-1 {
+			newline = "\n"
+		}
+		data["syncedLyrics"] = data["syncedLyrics"].(string) + fmt.Sprintf("[%d:%02.2f] %s", minutes, seconds, lyric.Lyric) + newline
+	}
+
+	body, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	if token == "" {
+		token, err = NewLRCLIBPublishToken()
+		if err != nil {
+			return err
+		}
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "https://lrclib.net/api/publish", bytes.NewReader(body))
+	req.Header.Set("X-Publish-Token", token)
+	if err != nil {
+		return err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode == http.StatusCreated {
+		return nil
+	}
+	var failed PublishError
+	err = json.NewDecoder(res.Body).Decode(&failed)
+	if err != nil {
+		return err
+	}
+	return failed
+}
+
+type PublishError struct {
+	Code    int    `json:"code"`
+	Name    string `json:"name"`
+	Message string `json:"message"`
+}
+
+func (p PublishError) Error() string {
+	return fmt.Sprintf("%s (code %d): %s", p.Name, p.Code, p.Message)
+}
+
+func NewLRCLIBPublishToken() (string, error) {
+	req, err := http.NewRequest(http.MethodPost, "https://lrclib.net/api/request-challenge", nil)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	var response struct {
+		Prefix string `json:"prefix"`
+		Target string `json:"target"`
+	}
+	err = json.NewDecoder(res.Body).Decode(&response)
+	if err != nil {
+		return "", err
+	}
+
+	nonce := solveChallenge(response.Prefix, response.Target)
+
+	return fmt.Sprintf("{%s}:{%s}", response.Prefix, nonce), nil
+}
+
+func verifyNonce(result []byte, target []byte) bool {
+	if len(result) != len(target) {
+		return false
+	}
+
+	for i := 0; i < len(result); i++ {
+		if result[i] > target[i] {
+			return false
+		} else if result[i] < target[i] {
+			break
+		}
+	}
+
+	return true
+}
+
+func solveChallenge(prefix string, targetHex string) string {
+	nonce := 0
+	target, _ := hex.DecodeString(targetHex)
+
+	for {
+		input := prefix + strconv.Itoa(nonce)
+		hashed := sha256.Sum256([]byte(input))
+
+		if verifyNonce(hashed[:], target) {
+			break
+		} else {
+			nonce++
+		}
+	}
+
+	return strconv.Itoa(nonce)
 }

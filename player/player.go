@@ -110,7 +110,8 @@ type Player struct {
 	paused      bool
 	currentSong int
 
-	streamer *streamer.Streamer
+	streamer  *streamer.Streamer
+	resampler *beep.Resampler
 
 	SongFinished chan struct{}
 
@@ -118,11 +119,13 @@ type Player struct {
 }
 
 func New(src Source) *Player {
+	st := streamer.NewStreamer()
 	p := &Player{
 		queue:  make([]*Song, 0),
 		Source: src,
 
-		streamer: streamer.NewStreamer(),
+		streamer:  st,
+		resampler: beep.ResampleRatio(4, 1, st),
 
 		currentSong: -1,
 
@@ -134,6 +137,10 @@ func New(src Source) *Player {
 	speaker.Init(streamer.SampleRate, streamer.SampleRate.N(time.Second/10))
 
 	return p
+}
+
+func (p *Player) SetSpeed(x float64) {
+	p.resampler.SetRatio(x)
 }
 
 func (p *Player) Volume() float64 {
@@ -245,7 +252,7 @@ func (p *Player) Play(i int) error {
 	speaker.Clear()
 
 	p.streamer.SetStreamer(streamer)
-	speaker.Play(beep.Seq(p.streamer, beep.Callback(func() {
+	speaker.Play(beep.Seq(p.resampler, beep.Callback(func() {
 		p.SongFinished <- struct{}{}
 	})))
 

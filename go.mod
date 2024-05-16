@@ -18,6 +18,8 @@ require (
 	fyne.io/systray v1.10.1-0.20231230205326-d160fd363db9 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/disintegration/imaging v1.6.2 // indirect
+	github.com/dweymouth/fyne-synced-lyrics v0.0.0-20240515154146-b0288eb89339 // indirect
 	github.com/ebitengine/oto/v3 v3.1.0 // indirect
 	github.com/ebml-go/ebml v0.0.0-20160925193348-ca8851a10894 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -26,11 +28,12 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240306074159-ea2d69986ecb // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
-	github.com/jeandeaual/go-locale v0.0.0-20240204043739-672d8d016d9a // indirect
+	github.com/jeandeaual/go-locale v0.0.0-20240223122105-ce5225dcaa49 // indirect
 	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
 	github.com/jfreymuth/vorbis v1.0.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
 	github.com/lostdusty/gobalt v1.0.6 // indirect
+	github.com/matwachich/fynex-widgets v0.0.0-20240512211026-613b1fe4fedc // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect
@@ -39,6 +42,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rymdport/portal v0.2.2 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
+	github.com/tufteddeer/go-circleimage v0.0.0-20190706112238-da7082266f97 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -47,22 +51,23 @@ require (
 	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204 // indirect
+	github.com/dweymouth/fyne-lyrics v0.0.0-20240516154932-2ccb89a8b806
 	github.com/ebitengine/purego v0.7.1 // indirect
 	github.com/fredbi/uri v1.1.0 // indirect
-	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
-	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
+	github.com/fyne-io/gl-js v0.0.0-20230506162202-1fdaa286a934 // indirect
+	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-text/render v0.1.0 // indirect
-	github.com/go-text/typesetting v0.1.0 // indirect
+	github.com/go-text/typesetting v0.1.1 // indirect
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7 // indirect
 	github.com/google/uuid v1.6.0
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jfbus/httprs v1.0.1
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
-	github.com/yuin/goldmark v1.5.5 // indirect
-	golang.org/x/image v0.14.0 // indirect
-	golang.org/x/net v0.24.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	github.com/yuin/goldmark v1.7.1 // indirect
+	golang.org/x/image v0.16.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 )

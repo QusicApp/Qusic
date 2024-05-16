@@ -90,53 +90,28 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 	syncedLyrics = song.Lyrics.SyncedLyrics
 
-	lyricsScroll.Content = lyricsTxt
-	lyricsScroll.Refresh()
+	//lyricsScroll.Content = lyricsTxt
+	//lyricsScroll.Refresh()
 	if len(syncedLyrics) == 0 {
 		if song.Lyrics.PlainLyrics == "" {
-			lyricsScroll.Content = container.NewCenter(widget.NewRichTextFromMarkdown("# Sorry, no lyrics were found for this song. Maybe try a different source."))
-			lyricsScroll.Refresh()
-		} else {
-			lines := strings.Split(song.Lyrics.PlainLyrics, "\n")
-			lyricsTxt.Segments = make([]widget.RichTextSegment, len(lines))
-			for i, line := range lines {
-				var seg = new(widget.TextSegment)
-				seg.Style.SizeName = theme.SizeNameHeadingText
-				seg.Text = line
-				seg.Style.TextStyle.Bold = false
+			//lyricsScroll.Content = container.NewCenter(widget.NewRichTextFromMarkdown("# Sorry, no lyrics were found for this song. Maybe try a different source."))
+			//lyricsScroll.Refresh()
 
-				lyricsTxt.Segments[i] = seg
-			}
+		} else {
+			lyricsTxt.SetLyrics(strings.Split(song.Lyrics.PlainLyrics, "\n"), false)
 		}
 	} else {
-		lyricsTxt.Segments = make([]widget.RichTextSegment, len(syncedLyrics))
+		var lines = make([]string, len(syncedLyrics))
 		for i, lyric := range syncedLyrics {
-			//segment := i
-			var seg = new(widget.TextSegment)
-			seg.Style.SizeName = theme.SizeNameHeadingText
-			seg.Text = lyric.Lyric
-			seg.Style.TextStyle.Bold = false
-			/*seg.OnTapped = func() {
-				player.Seek(int(song.Lyrics.SyncedLyrics[segment].At / time.Second))
-
-				if segment < syncedLyrics[0].Index {
-					for _, s := range lyricsTxt.Segments[:syncedLyrics[0].Index] {
-						s.(*widget.TextSegment).Style.TextStyle.Bold = false
-					}
-				}
-				for _, s := range lyricsTxt.Segments[:segment] {
-					s.(*widget.TextSegment).Style.TextStyle.Bold = true
-				}
-				syncedLyrics = syncedLyrics[segment:]
-			}*/
-			lyricsTxt.Segments[i] = seg
+			lines[i] = lyric.Lyric
 		}
+		lyricsTxt.SetLyrics(lines, true)
 	}
-	lyricsTxt.Segments = append(lyricsTxt.Segments, &widget.TextSegment{
-		Style: widget.RichTextStyle{SizeName: theme.SizeNameSubHeadingText},
-		Text:  "Source: " + song.Lyrics.LyricSource,
-	})
-	lyricsTxt.Refresh()
+	tabs.EnableIndex(2)
+	//lyricsTxt.Segments = append(lyricsTxt.Segments, &widget.TextSegment{
+	//	Style: widget.RichTextStyle{SizeName: theme.SizeNameSubHeadingText},
+	//	Text:  "Source: " + song.Lyrics.LyricSource,
+	//})
 
 	image := song.Thumbnails[0]
 	d, err := http.Get(image.URL)
@@ -197,8 +172,11 @@ func main() {
 		tabs = container.NewAppTabs(
 			container.NewTabItemWithIcon("", theme.HomeIcon(), homePage()),
 			container.NewTabItemWithIcon("", theme.SearchIcon(), searchPage(window)),
-			container.NewTabItem("Lyrics", lyricsPage()),
+			container.NewTabItem("Lyrics", lyricsPage(window)),
+			container.NewTabItem("DJ Mode", djModePage()),
 		)
+
+		tabs.DisableIndex(2)
 
 		tabs.SetTabLocation(container.TabLocationLeading)
 
@@ -263,15 +241,13 @@ func main() {
 				player.Seek(time.Duration(f) * time.Millisecond)
 				cs := player.CurrentSong()
 				var in int
-				for i, lyric := range cs.Lyrics.SyncedLyrics {
+				for _, lyric := range cs.Lyrics.SyncedLyrics {
 					if lyric.At <= passed {
 						in++
 					}
-					if i < len(lyricsTxt.Segments) {
-						lyricsTxt.Segments[i].(*widget.TextSegment).Style.TextStyle.Bold = lyric.At <= passed
-					}
 				}
 				syncedLyrics = cs.Lyrics.SyncedLyrics[in:]
+				lyricsTxt.SetCurrentLine(in + 1)
 				lyricsTxt.Refresh()
 			}
 			prevf = f
@@ -305,8 +281,8 @@ func main() {
 			), nil, container.NewVBox(settingsButton), tabs))
 
 		size := window.Content().MinSize()
-		size.Width *= 2.8
-		size.Height *= 4
+		size.Width *= 2.5
+		size.Height *= 3.5
 		window.Resize(size)
 
 		window.Show()
@@ -341,7 +317,9 @@ func main() {
 				}
 				lyric := syncedLyrics[0]
 				if lyric.At <= passed {
-					lyricsTxt.Segments[lyric.Index].(*widget.TextSegment).Style.TextStyle.Bold = true
+					lyricsTxt.NextLine()
+					syncedLyrics = syncedLyrics[1:]
+					/*lyricsTxt.Segments[lyric.Index].(*widget.TextSegment).Style.TextStyle.Bold = true
 					lyricsTxt.Refresh()
 					if len(syncedLyrics) == 0 {
 						continue
@@ -352,7 +330,7 @@ func main() {
 
 					lyricsScroll.Scrolled(&fyne.ScrollEvent{
 						Scrolled: fyne.NewDelta(0, dy),
-					})
+					})*/
 				}
 			case <-player.SongFinished:
 				{
@@ -361,6 +339,7 @@ func main() {
 
 					if len(q) <= i {
 						// stop
+						tabs.DisableIndex(2)
 						pause.Disable()
 						next.Disable()
 
@@ -375,12 +354,12 @@ func main() {
 						p.Refresh()
 
 						songProgressSlider.Disable()
-						songVolumeSlider.Disable()
 
 						bottom.Objects[0] = layout.NewSpacer()
 						bottom.Refresh()
 
-						lyricsTxt.ParseMarkdown("")
+						//lyricsScroll.Content = container.NewCenter(widget.NewRichTextFromMarkdown(lyricsTxtDefault))
+						//lyricsScroll.Refresh()
 						continue
 					}
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/url"
-	"qusic/cobalt"
 	"qusic/logger"
 	"qusic/streamer"
 
@@ -76,14 +75,20 @@ func (p Preferences) SetBool(key string, value bool) {
 var preferences = make(Preferences)
 
 func settingsGeneralTab() fyne.CanvasObject {
-	enableDiscordRPC := widget.NewCheck("Discord RPC", func(b bool) {
+	discordRPCConnectingText := widget.NewLabel("connecting...")
+	discordRPCConnectingText.Hide()
+
+	enableDiscordRPC := widget.NewCheck("Discord RPC", nil)
+	enableDiscordRPC.SetChecked(preferences.Bool("discord_rpc"))
+	enableDiscordRPC.OnChanged = func(b bool) {
 		if b == true && !preferences.Bool("discord_rpc") {
 			logger.Inf("Connecting to Discord RPC: ")
+			discordRPCConnectingText.Show()
 			logger.Println(rpc.Connect())
+			discordRPCConnectingText.Hide()
 		}
 		preferences.SetBool("discord_rpc", b)
-	})
-	enableDiscordRPC.SetChecked(preferences.Bool("discord_rpc"))
+	}
 
 	hideApp := widget.NewCheck("Hide app instead of closing", func(b bool) {
 		preferences.SetBool("hide_app", true)
@@ -96,7 +101,7 @@ func settingsGeneralTab() fyne.CanvasObject {
 	hardwareAcceleration.SetChecked(preferences.Bool("hardware_acceleration"))
 
 	return container.NewVBox(
-		enableDiscordRPC,
+		container.NewHBox(enableDiscordRPC, discordRPCConnectingText),
 		hideApp,
 		hardwareAcceleration,
 		widget.NewRichTextFromMarkdown("## Links"),
@@ -150,9 +155,9 @@ var dsources = map[string]int{
 }
 
 var formats = map[string]int{
-	//"wav": 0,
-	//"mp3": 1,
-	"ogg": 0,
+	"wav": 0,
+	"mp3": 1,
+	"ogg": 2,
 }
 
 func settingsSourcesTab() fyne.CanvasObject {
@@ -228,7 +233,7 @@ func settingsDownloadTab() fyne.CanvasObject {
 			player.Downloader = streamer.New
 		case 1:
 			s = "cobalt"
-			player.Downloader = cobalt.New
+			//player.Downloader = cobalt.New
 		default:
 			return
 		}
@@ -237,18 +242,18 @@ func settingsDownloadTab() fyne.CanvasObject {
 	dsel.SetSelectedIndex(dsources[preferences.StringWithFallback("download.source", "youtube")])
 
 	aformatsel := widget.NewSelect([]string{
-		//"WAV",
-		//"MP3",
+		"WAV",
+		"MP3",
 		"OGG/Vorbis",
 	}, nil)
 	aformatsel.OnChanged = func(s string) {
 		i := aformatsel.SelectedIndex()
 		switch i {
-		//case 0:
-		//	s = "wav"
-		//case 1:
-		//	s = "mp3"
 		case 0:
+			s = "wav"
+		case 1:
+			s = "mp3"
+		case 2:
 			s = "ogg"
 		default:
 			return

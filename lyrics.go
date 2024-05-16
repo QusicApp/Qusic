@@ -26,7 +26,7 @@ func lyricsPage(w fyne.Window) fyne.CanvasObject {
 	lyricsTxt = fynesyncedlyrics.NewLyricsViewer()
 	lyricsRect = canvas.NewRectangle(theme.BackgroundColor())
 
-	page := container.NewStack(lyricsRect, lyricsTxt)
+	page := lyricsTxt//container.NewStack(lyricsRect, lyricsTxt)
 
 	editor := lyricsEditorPage(w, page)
 	editor.Hide()

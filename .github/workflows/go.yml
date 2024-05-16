@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go-version: ["1.21.x"]
+        go-version: ["1.22.x"]
         os: [ubuntu-latest, windows-latest, macos-latest]
         arch: [amd64, arm64] # Add ARM64 architecture
 
@@ -25,6 +25,13 @@ jobs:
       - name: Get dependencies
         run: sudo apt-get update && sudo apt-get install gcc libgl1-mesa-dev libx11-dev xorg-dev libwayland-dev libxkbcommon-dev bc
         if: ${{ runner.os == 'Linux' }}
+      - name: Install Homebrew (macOS)
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        if : ${{ runner.os == 'macOS' }}
+      - name: Install Opus (macOS)
+        run: brew install opus
+        if : ${{ runner.os == 'macOS' }}
       - name: Build
         run: go build -v
       - name: Upload Go build results linux

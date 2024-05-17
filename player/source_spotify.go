@@ -56,6 +56,11 @@ func (source SpotifySource) Search(query string) SearchResult {
 		result.Songs[i] = source.Song(song)
 	}
 
+	result.Artists = make([]Artist, len(res.Artists.Items))
+	for i, artist := range res.Artists.Items {
+		result.Artists[i] = source.Artist(artist)
+	}
+
 	return result
 }
 

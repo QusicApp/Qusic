@@ -25,17 +25,20 @@ func play(i int, w fyne.Window) {
 	s := q[i]
 	player.GetVideo(s)
 
+	setPlayedSong(s, w)
+
 	logger.Inff("Playing song %s (%s): ", s.Name, preferences.StringWithFallback("download.source", "youtube"))
 	err := player.Play(i)
 	logger.Println(err)
 	if err != nil {
 		return
 	}
-	setPlayedSong(s, w)
 }
 
 func playnow(so *pl.Song, w fyne.Window) {
 	player.GetVideo(so)
+
+	setPlayedSong(so, w)
 
 	logger.Inff("Playing song %s (%s): ", so.Name, preferences.StringWithFallback("download.source", "youtube"))
 	err := player.PlayNow(so)
@@ -43,7 +46,6 @@ func playnow(so *pl.Song, w fyne.Window) {
 	if err != nil {
 		return
 	}
-	setPlayedSong(so, w)
 }
 
 func searchPage(w fyne.Window) fyne.CanvasObject {
@@ -157,7 +159,45 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 					))),
 				))
 
-			searchContent = container.NewGridWithColumns(2, container.NewPadded(topResult), container.NewVScroll(container.NewPadded(songList)))
+			artistsTxt := canvas.NewText("Artists", theme.ForegroundColor())
+			artistsTxt.TextSize = theme.TextHeadingSize()
+			artistsTxt.TextStyle.Bold = true
+			artists := container.NewHBox()
+
+			for _, artist := range results.Artists {
+				name := widget.NewRichText(
+					&widget.TextSegment{
+						Style: widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}},
+						Text:  artist.Name,
+					},
+					&widget.TextSegment{
+						Style: widget.RichTextStyle{
+							ColorName: theme.ColorNamePlaceHolder,
+						},
+						Text: "Artist",
+					},
+				)
+				name.Truncation = fyne.TextTruncateEllipsis
+				img := circleImage(getImg(artist.Thumbnails.Max().URL))
+				image := canvas.NewImageFromImage(img)
+				if preferences.Bool("hardware_acceleration") {
+					image.ScaleMode = canvas.ImageScaleFastest
+				}
+				image.FillMode = canvas.ImageFillContain
+				image.SetMinSize(fyne.NewSize(150, 150))
+
+				b := container.NewBorder(nil, name, nil, nil, image)
+				artists.Add(container.NewPadded(b))
+			}
+
+			searchContent = container.NewGridWithColumns(2,
+				container.NewPadded(topResult),
+				container.NewVScroll(container.NewPadded(songList)),
+			)
+			searchContent = container.NewGridWithRows(2,
+				searchContent,
+				container.NewPadded(container.NewVBox(artistsTxt, container.NewHScroll(container.NewPadded(artists)))),
+			)
 			border.Objects[0] = searchContent
 		}
 
@@ -188,5 +228,5 @@ func getImg(url string) image.Image {
 }
 
 func circleImage(img image.Image) image.Image {
-	return circleimage.CircleImage(img, image.Point{img.Bounds().Dx() / 2, img.Bounds().Dy() / 2}, 30)
+	return circleimage.CircleImage(img, image.Point{img.Bounds().Dx() / 2, img.Bounds().Dy() / 2}, img.Bounds().Dx()/2)
 }

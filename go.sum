@@ -94,6 +94,8 @@ github.com/dweymouth/fyne-lyrics v0.0.0-20240516153121-76bfbc3a17b0 h1:gZJ7Si1yD
 github.com/dweymouth/fyne-lyrics v0.0.0-20240516153121-76bfbc3a17b0/go.mod h1:wfA5DWb0Udzq4K7MkzK+EzrM7xAyGyUpNO2HbWBPNvs=
 github.com/dweymouth/fyne-lyrics v0.0.0-20240516154932-2ccb89a8b806 h1:wDQFpzj6KDe2wJwU5w7mCPln9LBfrA7ml5PUW7pvoPM=
 github.com/dweymouth/fyne-lyrics v0.0.0-20240516154932-2ccb89a8b806/go.mod h1:wfA5DWb0Udzq4K7MkzK+EzrM7xAyGyUpNO2HbWBPNvs=
+github.com/dweymouth/fyne-lyrics v0.0.0-20240517003322-3c47c48b1751 h1:siUJZlGbTAzpIUDGDkzM3KD5g1oOHsJRUeGEW/hDHnw=
+github.com/dweymouth/fyne-lyrics v0.0.0-20240517003322-3c47c48b1751/go.mod h1:wfA5DWb0Udzq4K7MkzK+EzrM7xAyGyUpNO2HbWBPNvs=
 github.com/dweymouth/fyne-synced-lyrics v0.0.0-20240515154146-b0288eb89339 h1:M5KWd80SUt4RglY1c3VyGsO+Out0dYA8iuO4KnL0ZgA=
 github.com/dweymouth/fyne-synced-lyrics v0.0.0-20240515154146-b0288eb89339/go.mod h1:xA0EzzD/44DZoAjk4vri3JQQgXtqpJk+4qZR+A7S39U=
 github.com/ebitengine/oto/v3 v3.1.0 h1:9tChG6rizyeR2w3vsygTTTVVJ9QMMyu00m2yBOCch6U=

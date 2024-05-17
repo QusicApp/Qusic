@@ -26,7 +26,8 @@ func lyricsPage(w fyne.Window) fyne.CanvasObject {
 	lyricsTxt = fynesyncedlyrics.NewLyricsViewer()
 	lyricsRect = canvas.NewRectangle(theme.BackgroundColor())
 
-	page := lyricsTxt//container.NewStack(lyricsRect, lyricsTxt)
+	page := container.NewStack(lyricsRect, lyricsTxt)
+	lyricsTxt.ActiveLyricPosition = fynesyncedlyrics.ActiveLyricPositionTopThird
 
 	editor := lyricsEditorPage(w, page)
 	editor.Hide()
@@ -110,7 +111,6 @@ func lyricsEditorPage(w fyne.Window, page fyne.CanvasObject) fyne.CanvasObject {
 		Importance: widget.LowImportance,
 		Icon:       theme.NavigateBackIcon(),
 	}
-	cs := *player.CurrentSong()
 	top := container.NewPadded(container.NewHBox(
 		button,
 		layout.NewSpacer(),
@@ -122,6 +122,7 @@ func lyricsEditorPage(w fyne.Window, page fyne.CanvasObject) fyne.CanvasObject {
 					d := dialog.NewConfirm("Publishing lyrics", "These lyrics are uploaded to https://lrclib.net, not saved locally, are you sure you want to continue?",
 						func(b bool) {
 							if b {
+								cs := *player.CurrentSong()
 								status := widget.NewRichTextFromMarkdown("## status: verifying")
 								d := dialog.NewCustomWithoutButtons("Publishing lyrics", container.NewCenter(
 									status,

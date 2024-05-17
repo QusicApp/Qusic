@@ -51,7 +51,7 @@ require (
 	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204 // indirect
-	github.com/dweymouth/fyne-lyrics v0.0.0-20240516154932-2ccb89a8b806
+	github.com/dweymouth/fyne-lyrics v0.0.0-20240517003322-3c47c48b1751
 	github.com/ebitengine/purego v0.7.1 // indirect
 	github.com/fredbi/uri v1.1.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20230506162202-1fdaa286a934 // indirect

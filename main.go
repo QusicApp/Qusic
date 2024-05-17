@@ -140,6 +140,10 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	bottom.Refresh()
 }
 
+var (
+	searchPaged *widgets.Paged
+)
+
 func main() {
 	logger.Info("Qusic [ made by oq ]")
 	if preferences.String("source") == "spotify" {
@@ -169,9 +173,10 @@ func main() {
 			}
 		})
 
+		searchPaged = widgets.NewPaged(searchPage(window))
 		tabs = container.NewAppTabs(
 			container.NewTabItemWithIcon("", theme.HomeIcon(), homePage()),
-			container.NewTabItemWithIcon("", theme.SearchIcon(), searchPage(window)),
+			container.NewTabItemWithIcon("", theme.SearchIcon(), searchPaged.Container()),
 			container.NewTabItem("Lyrics", lyricsPage(window)),
 			container.NewTabItem("DJ Mode", djModePage()),
 		)
@@ -282,7 +287,7 @@ func main() {
 
 		size := window.Content().MinSize()
 		size.Width *= 2.5
-		size.Height *= 3.5
+		size.Height *= 3
 		window.Resize(size)
 
 		window.Show()

@@ -91,12 +91,12 @@ func settingsGeneralTab() fyne.CanvasObject {
 	}
 
 	hideApp := widget.NewCheck("Hide app instead of closing", func(b bool) {
-		preferences.SetBool("hide_app", true)
+		preferences.SetBool("hide_app", b)
 	})
 	hideApp.SetChecked(preferences.Bool("hide_app"))
 
 	hardwareAcceleration := widget.NewCheck("Hardware acceleration", func(b bool) {
-		preferences.SetBool("hardware_acceleration", true)
+		preferences.SetBool("hardware_acceleration", b)
 	})
 	hardwareAcceleration.SetChecked(preferences.Bool("hardware_acceleration"))
 
@@ -144,9 +144,10 @@ var sources = map[string]int{
 
 var lsources = map[string]int{
 	"lrclib":     0,
-	"ytmusic":    1,
-	"genius":     2,
-	"lyrics.ovh": 3,
+	"youtubesub": 1,
+	"ytmusic":    2,
+	"genius":     3,
+	"lyrics.ovh": 4,
 }
 
 var dsources = map[string]int{
@@ -188,6 +189,7 @@ func settingsSourcesTab() fyne.CanvasObject {
 
 	lyricsSel := widget.NewSelect([]string{
 		"LRCLIB (Synced)",
+		"YouTube Subtitles (Synced)",
 		"YouTube Music",
 		"Genius",
 		"Lyrics.ovh",
@@ -198,10 +200,12 @@ func settingsSourcesTab() fyne.CanvasObject {
 		case 0:
 			s = "lrclib"
 		case 1:
-			s = "ytmusic"
+			s = "youtubesub"
 		case 2:
-			s = "genius"
+			s = "ytmusic"
 		case 3:
+			s = "genius"
+		case 4:
 			s = "lyrics.ovh"
 		default:
 			return

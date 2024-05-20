@@ -7,6 +7,8 @@ require (
 	github.com/kkdai/youtube/v2 v2.10.1
 )
 
+replace github.com/dweymouth/fyne-lyrics => ../fyne-lyrics
+
 require (
 	github.com/ebml-go/webm v0.0.0-20221117133942-84fa5245cf70
 	github.com/gopxl/beep v1.4.1
@@ -38,6 +40,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect
 	github.com/petar/GoLLRB v0.0.0-20130427215148-53be0d36a84c // indirect
+	github.com/pion/opus v0.0.0-20240409032234-867e82f70014 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rymdport/portal v0.2.2 // indirect

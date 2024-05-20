@@ -3,6 +3,7 @@ package streamer
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -131,6 +132,7 @@ func (s *pcmStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 			}
 		}
 		if len(s.pcm) <= s.pcmIdx || s.err != nil {
+			fmt.Println("audio done!!!")
 			//audio done
 			break
 		}
@@ -154,20 +156,27 @@ func (s *pcmStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 var _ beep.StreamSeekCloser = (*Streamer)(nil)
 
 type Streamer struct {
-	v effects.Volume
+	v  *effects.Volume
+	re *beep.Resampler
 }
 
 func NewStreamer() *Streamer {
+	vol := &effects.Volume{
+		Base:     2,
+		Streamer: new(beep.Ctrl),
+	}
 	return &Streamer{
-		v: effects.Volume{
-			Base:     2,
-			Streamer: new(beep.Ctrl),
-		},
+		v:  vol,
+		re: beep.ResampleRatio(4, 1, vol),
 	}
 }
 
 func (s *Streamer) SetStreamer(st beep.StreamSeekCloser) {
 	s.v.Streamer.(*beep.Ctrl).Streamer = st
+}
+
+func (s *Streamer) SetRatio(ratio float64) {
+	s.re.SetRatio(ratio)
 }
 
 func (s *Streamer) SetPaused(v bool) {
@@ -187,10 +196,13 @@ func (s *Streamer) Volume() float64 {
 }
 
 func (s *Streamer) Stream(samples [][2]float64) (n int, ok bool) {
-	return s.v.Stream(samples)
+	return s.re.Stream(samples)
 }
 
 func (s *Streamer) Err() error {
+	if err := s.re.Err(); err != nil {
+		return err
+	}
 	if s.v.Streamer.(*beep.Ctrl).Streamer == nil {
 		return s.v.Err()
 	}

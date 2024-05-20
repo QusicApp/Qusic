@@ -1,11 +1,15 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"qusic/logger"
 	"qusic/lyrics"
 	"qusic/widgets"
 	"slices"
+	"strconv"
+	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -19,15 +23,17 @@ import (
 
 var lyricsTxt *fynesyncedlyrics.LyricsViewer
 var lyricsRect *canvas.Rectangle
-
-const lyricsTxtDefault = "# There are no lyrics available for silence, there are simply no words"
+var lyricsAlt *widget.RichText
 
 func lyricsPage(w fyne.Window) fyne.CanvasObject {
 	lyricsTxt = fynesyncedlyrics.NewLyricsViewer()
 	lyricsRect = canvas.NewRectangle(theme.BackgroundColor())
+	lyricsAlt = widget.NewRichText()
+	lyricsAlt.Hide()
 
-	page := container.NewStack(lyricsRect, lyricsTxt)
-	lyricsTxt.ActiveLyricPosition = fynesyncedlyrics.ActiveLyricPositionTopThird
+	page := container.NewStack(lyricsRect, container.NewCenter(lyricsAlt), lyricsTxt)
+	lyricsTxt.ActiveLyricPosition = fynesyncedlyrics.ActiveLyricPositionTop
+	lyricsTxt.LyricSizeName = theme.SizeNameHeadingText
 
 	editor := lyricsEditorPage(w, page)
 	editor.Hide()
@@ -35,6 +41,13 @@ func lyricsPage(w fyne.Window) fyne.CanvasObject {
 	return container.NewBorder(container.NewHBox(
 		layout.NewSpacer(),
 
+		&widget.Button{
+			Importance: widget.LowImportance,
+			Icon:       theme.ViewRefreshIcon(),
+			OnTapped: func() {
+				getLyrics(player.CurrentSong())
+			},
+		},
 		&widget.Button{
 			Importance: widget.LowImportance,
 			Icon:       theme.DocumentCreateIcon(),
@@ -71,14 +84,61 @@ func syncedLyricsEditorPage() fyne.CanvasObject {
 		})
 		removeButton := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 			lyricsEditorSyncedData = slices.Delete(lyricsEditorSyncedData, i, i+1)
+			lines.Objects = slices.Delete(lines.Objects, i, i+1)
 		})
 		entry := widget.NewEntry()
 		entry.OnChanged = func(s string) {
 			lyricsEditorSyncedData[i].Lyric = s
 		}
-		time := widget.NewLabel(durString(dur))
+		duration := widget.NewEntry()
+		duration.SetText(durStringMS(dur))
+		duration.OnSubmitted = func(v string) {
+			sp := strings.Split(v, ":")
+			if len(sp) != 3 {
+				return
+			}
+			m, err := strconv.Atoi(sp[0])
+			if err != nil || m < 0 || m > 60 {
+				return
+			}
+			s, err := strconv.Atoi(sp[1])
+			if err != nil || s < 0 || s > 60 {
+				return
+			}
+			mi, err := strconv.Atoi(sp[2])
+			if err != nil || mi < 0 || mi > 100 {
+				return
+			}
 
-		border := container.NewBorder(nil, nil, container.NewHBox(removeButton, time), nil, entry)
+			dur := time.Duration(m)*time.Minute + time.Duration(s)*time.Second + time.Duration(mi)*time.Millisecond
+
+			lyricsEditorSyncedData[i].At = dur
+		}
+		duration.Validator = func(s string) error {
+			e := fmt.Errorf("invalid time")
+			sp := strings.Split(s, ":")
+			if len(sp) != 3 {
+				return e
+			}
+			i, err := strconv.Atoi(sp[0])
+			if err != nil {
+				return err
+			}
+			if 0 > i || i > 60 {
+				return e
+			}
+			i, err = strconv.Atoi(sp[1])
+			if 0 > i || i > 60 {
+				return e
+			}
+			i, err = strconv.Atoi(sp[2])
+			if 0 > i || i > 100 {
+				return e
+			}
+			return err
+		}
+
+		border := container.NewBorder(nil, nil, container.NewHBox(removeButton, duration), nil, entry)
 		lines.Add(border)
 	})
 	return container.NewVBox(
@@ -114,6 +174,83 @@ func lyricsEditorPage(w fyne.Window, page fyne.CanvasObject) fyne.CanvasObject {
 	top := container.NewPadded(container.NewHBox(
 		button,
 		layout.NewSpacer(),
+		&widget.Button{
+			Importance: widget.LowImportance,
+			Icon:       theme.ViewRefreshIcon(),
+			OnTapped: func() {
+				cs := player.CurrentSong()
+
+				tabs.Items[1].Content.(*widget.Entry).SetText(cs.Lyrics.PlainLyrics)
+				sy := tabs.Items[0].Content.(*fyne.Container).Objects[0].(*fyne.Container)
+				clear(sy.Objects)
+
+				sy.Refresh()
+				for _, lyric := range cs.Lyrics.SyncedLyrics {
+					i := len(sy.Objects)
+
+					lyricsEditorSyncedData = append(lyricsEditorSyncedData, lyric)
+					removeButton := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+						lyricsEditorSyncedData = slices.Delete(lyricsEditorSyncedData, i, i+1)
+						sy.Objects = slices.Delete(sy.Objects, i, i+1)
+					})
+					entry := widget.NewEntry()
+					entry.OnChanged = func(s string) {
+						lyricsEditorSyncedData[i].Lyric = s
+					}
+					entry.SetText(lyric.Lyric)
+					duration := widget.NewEntry()
+					duration.SetText(durStringMS(lyric.At))
+					duration.OnSubmitted = func(v string) {
+						sp := strings.Split(v, ":")
+						if len(sp) != 3 {
+							return
+						}
+						m, err := strconv.Atoi(sp[0])
+						if err != nil || m < 0 || m > 60 {
+							return
+						}
+						s, err := strconv.Atoi(sp[1])
+						if err != nil || s < 0 || s > 60 {
+							return
+						}
+						mi, err := strconv.Atoi(sp[2])
+						if err != nil || mi < 0 || mi > 100 {
+							return
+						}
+
+						dur := time.Duration(m)*time.Minute + time.Duration(s)*time.Second + time.Duration(mi)*time.Millisecond
+
+						lyricsEditorSyncedData[i].At = dur
+					}
+					duration.Validator = func(s string) error {
+						e := fmt.Errorf("invalid time")
+						sp := strings.Split(s, ":")
+						if len(sp) != 3 {
+							return e
+						}
+						i, err := strconv.Atoi(sp[0])
+						if err != nil {
+							return err
+						}
+						if 0 > i || i > 60 {
+							return e
+						}
+						i, err = strconv.Atoi(sp[1])
+						if 0 > i || i > 60 {
+							return e
+						}
+						i, err = strconv.Atoi(sp[2])
+						if 0 > i || i > 100 {
+							return e
+						}
+						return err
+					}
+
+					border := container.NewBorder(nil, nil, container.NewHBox(removeButton, duration), nil, entry)
+					sy.Add(border)
+				}
+			},
+		},
 		&widgets.Button{
 			Button: widget.Button{
 				Importance: widget.HighImportance,
@@ -122,6 +259,9 @@ func lyricsEditorPage(w fyne.Window, page fyne.CanvasObject) fyne.CanvasObject {
 					d := dialog.NewConfirm("Publishing lyrics", "These lyrics are uploaded to https://lrclib.net, not saved locally, are you sure you want to continue?",
 						func(b bool) {
 							if b {
+								slices.SortFunc(lyricsEditorSyncedData, func(a, b lyrics.SyncedLyric) int {
+									return cmp.Compare(a.At, b.At)
+								})
 								cs := *player.CurrentSong()
 								status := widget.NewRichTextFromMarkdown("## status: verifying")
 								d := dialog.NewCustomWithoutButtons("Publishing lyrics", container.NewCenter(

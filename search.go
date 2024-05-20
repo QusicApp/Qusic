@@ -61,147 +61,157 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 	border := container.NewBorder(container.NewGridWithColumns(3, layout.NewSpacer(), container.NewBorder(nil, nil, nil, searchButton, searchBar)), nil, nil, nil, searchContent)
 
 	searchBar.OnSubmitted = func(s string) {
-		logger.Infof("Searching query \"%s\"", s)
-		results := player.Search(s)
+		go func() {
+			logger.Infof("Searching query \"%s\"", s)
+			results := player.Search(s)
 
-		if results.TopResult.ID == "" {
-			border.Objects[0] = container.NewCenter(
-				widget.NewRichTextFromMarkdown("# SOrry no results :("),
-			)
-		} else {
-			songsTxt := canvas.NewText("Songs", theme.ForegroundColor())
-			songsTxt.TextSize = theme.TextHeadingSize()
-			songsTxt.TextStyle.Bold = true
+			if results.TopResult.ID == "" {
+				border.Objects[0] = container.NewCenter(
+					widget.NewRichTextFromMarkdown("# SOrry no results :("),
+				)
+			} else {
+				songsTxt := canvas.NewText("Songs", theme.ForegroundColor())
+				songsTxt.TextSize = theme.TextHeadingSize()
+				songsTxt.TextStyle.Bold = true
 
-			songList := container.NewVBox(songsTxt)
-			for i, s := range results.Songs {
-				song := s
+				songList := container.NewVBox(songsTxt)
+				for i, s := range results.Songs {
+					song := s
 
-				img := canvas.NewImageFromImage(getImg(song.Thumbnails.Min().URL))
-				img.SetMinSize(fyne.NewSize(48, 48))
-				if preferences.Bool("hardware_acceleration") {
-					img.ScaleMode = canvas.ImageScaleFastest
+					image, err := getImg(song.Thumbnails.Min().URL)
+					if err != nil {
+						continue
+					}
+					img := canvas.NewImageFromImage(image)
+					img.SetMinSize(fyne.NewSize(48, 48))
+					if preferences.Bool("hardware_acceleration") {
+						img.ScaleMode = canvas.ImageScaleFastest
+					}
+					res := &widgets.SongResult{
+						Name:           song.Name,
+						Artist:         artistText(song.Artists),
+						Image:          img,
+						DurationString: durString(song.Duration),
+						OnTapped: func() {
+							playnow(&song, w)
+						},
+					}
+					res.OptionsOnTapped = func() {
+						widget.NewPopUpMenu(
+							fyne.NewMenu("", fyne.NewMenuItem("Add to queue", func() {
+								logger.Infof("Added song to queue: %s", song.Name)
+								player.AddToQueue(&song)
+							})), w.Canvas(),
+						).
+							ShowAtPosition(fyne.CurrentApp().Driver().AbsolutePositionForObject(res.Options))
+					}
+					songList.Add(res)
+					if i != len(results.Songs)-1 {
+						songList.Add(canvas.NewRectangle(theme.DisabledColor()))
+					}
 				}
-				res := &widgets.SongResult{
-					Name:           song.Name,
-					Artist:         artistText(song.Artists),
-					Image:          img,
-					DurationString: durString(song.Duration),
-					OnTapped: func() {
-						playnow(&song, w)
-					},
-				}
-				res.OptionsOnTapped = func() {
+
+				topResultTxt := canvas.NewText("Top Result", theme.ForegroundColor())
+				topResultTxt.TextSize = theme.TextHeadingSize()
+				topResultTxt.TextStyle.Bold = true
+
+				topResultRect := canvas.NewRectangle(theme.DisabledColor())
+				topResultRect.CornerRadius = 5
+
+				image := results.TopResult.Thumbnails.Max()
+				d, _ := http.Get(image.URL)
+				topResultImg := canvas.NewImageFromReader(d.Body, results.TopResult.Name)
+				topResultImg.SetMinSize(fyne.NewSize(96, 96))
+				topResultImg.FillMode = canvas.ImageFillContain
+
+				topResultTitle := canvas.NewText(results.TopResult.Name, theme.ForegroundColor())
+				topResultTitle.TextSize = theme.TextSubHeadingSize()
+				topResultTitle.TextStyle.Bold = true
+
+				topResultSubtitle := canvas.NewText(fmt.Sprintf("Song • %s", artistText(results.TopResult.Artists)), theme.ForegroundColor())
+
+				topResultOptions := widgets.NewThreeDotOptions(nil)
+				topResultOptions.OnTapped = func() {
 					widget.NewPopUpMenu(
 						fyne.NewMenu("", fyne.NewMenuItem("Add to queue", func() {
-							logger.Infof("Added song to queue: %s", song.Name)
-							player.AddToQueue(&song)
+							logger.Infof("Added song to queue: %s", results.TopResult.Name)
+							player.AddToQueue(&results.TopResult)
 						})), w.Canvas(),
 					).
-						ShowAtPosition(fyne.CurrentApp().Driver().AbsolutePositionForObject(res.Options))
+						ShowAtPosition(fyne.CurrentApp().Driver().AbsolutePositionForObject(topResultOptions))
 				}
-				songList.Add(res)
-				if i != len(results.Songs)-1 {
-					songList.Add(canvas.NewRectangle(theme.DisabledColor()))
-				}
-			}
-
-			topResultTxt := canvas.NewText("Top Result", theme.ForegroundColor())
-			topResultTxt.TextSize = theme.TextHeadingSize()
-			topResultTxt.TextStyle.Bold = true
-
-			topResultRect := canvas.NewRectangle(theme.DisabledColor())
-			topResultRect.CornerRadius = 5
-
-			image := results.TopResult.Thumbnails.Max()
-			d, _ := http.Get(image.URL)
-			topResultImg := canvas.NewImageFromReader(d.Body, results.TopResult.Name)
-			topResultImg.SetMinSize(fyne.NewSize(96, 96))
-			topResultImg.FillMode = canvas.ImageFillContain
-
-			topResultTitle := canvas.NewText(results.TopResult.Name, theme.ForegroundColor())
-			topResultTitle.TextSize = theme.TextSubHeadingSize()
-			topResultTitle.TextStyle.Bold = true
-
-			topResultSubtitle := canvas.NewText(fmt.Sprintf("Song • %s", artistText(results.TopResult.Artists)), theme.ForegroundColor())
-
-			topResultOptions := widgets.NewThreeDotOptions(nil)
-			topResultOptions.OnTapped = func() {
-				widget.NewPopUpMenu(
-					fyne.NewMenu("", fyne.NewMenuItem("Add to queue", func() {
-						logger.Infof("Added song to queue: %s", results.TopResult.Name)
-						player.AddToQueue(&results.TopResult)
-					})), w.Canvas(),
-				).
-					ShowAtPosition(fyne.CurrentApp().Driver().AbsolutePositionForObject(topResultOptions))
-			}
-			topResult := container.NewVBox(
-				topResultTxt,
-				container.NewStack(
-					topResultRect,
-					container.NewPadded(container.NewBorder(nil, nil, container.NewPadded(topResultImg), nil, container.NewVBox(
-						layout.NewSpacer(),
-						container.NewHBox(topResultTitle, layout.NewSpacer(), topResultOptions),
-						layout.NewSpacer(),
-						topResultSubtitle,
-						layout.NewSpacer(),
-						container.NewGridWithColumns(3, &widgets.Button{
-							Button: widget.Button{
-								Text:       "Play",
-								Icon:       theme.MediaPlayIcon(),
-								Importance: widget.HighImportance,
-								OnTapped: func() {
-									playnow(&results.TopResult, w)
+				topResult := container.NewVBox(
+					topResultTxt,
+					container.NewStack(
+						topResultRect,
+						container.NewPadded(container.NewBorder(nil, nil, container.NewPadded(topResultImg), nil, container.NewVBox(
+							layout.NewSpacer(),
+							container.NewHBox(topResultTitle, layout.NewSpacer(), topResultOptions),
+							layout.NewSpacer(),
+							topResultSubtitle,
+							layout.NewSpacer(),
+							container.NewGridWithColumns(3, &widgets.Button{
+								Button: widget.Button{
+									Text:       "Play",
+									Icon:       theme.MediaPlayIcon(),
+									Importance: widget.HighImportance,
+									OnTapped: func() {
+										playnow(&results.TopResult, w)
+									},
 								},
-							},
-						}),
-						layout.NewSpacer(),
-					))),
-				))
+							}),
+							layout.NewSpacer(),
+						))),
+					))
 
-			artistsTxt := canvas.NewText("Artists", theme.ForegroundColor())
-			artistsTxt.TextSize = theme.TextHeadingSize()
-			artistsTxt.TextStyle.Bold = true
-			artists := container.NewHBox()
+				artistsTxt := canvas.NewText("Artists", theme.ForegroundColor())
+				artistsTxt.TextSize = theme.TextHeadingSize()
+				artistsTxt.TextStyle.Bold = true
+				artists := container.NewHBox()
 
-			for _, artist := range results.Artists {
-				name := widget.NewRichText(
-					&widget.TextSegment{
-						Style: widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}},
-						Text:  artist.Name,
-					},
-					&widget.TextSegment{
-						Style: widget.RichTextStyle{
-							ColorName: theme.ColorNamePlaceHolder,
+				for _, artist := range results.Artists {
+					name := widget.NewRichText(
+						&widget.TextSegment{
+							Style: widget.RichTextStyle{TextStyle: fyne.TextStyle{Bold: true}},
+							Text:  artist.Name,
 						},
-						Text: "Artist",
-					},
-				)
-				name.Truncation = fyne.TextTruncateEllipsis
-				img := circleImage(getImg(artist.Thumbnails.Max().URL))
-				image := canvas.NewImageFromImage(img)
-				if preferences.Bool("hardware_acceleration") {
-					image.ScaleMode = canvas.ImageScaleFastest
-				}
-				image.FillMode = canvas.ImageFillContain
-				image.SetMinSize(fyne.NewSize(150, 150))
+						&widget.TextSegment{
+							Style: widget.RichTextStyle{
+								ColorName: theme.ColorNamePlaceHolder,
+							},
+							Text: "Artist",
+						},
+					)
+					name.Truncation = fyne.TextTruncateEllipsis
+					img, err := getImg(artist.Thumbnails.Max().URL)
+					if err != nil {
+						continue
+					}
 
-				b := container.NewBorder(nil, name, nil, nil, image)
-				artists.Add(container.NewPadded(b))
+					image := canvas.NewImageFromImage(circleImage(img))
+					if preferences.Bool("hardware_acceleration") {
+						image.ScaleMode = canvas.ImageScaleFastest
+					}
+					image.FillMode = canvas.ImageFillContain
+					image.SetMinSize(fyne.NewSize(150, 150))
+
+					b := container.NewBorder(nil, name, nil, nil, image)
+					artists.Add(container.NewPadded(b))
+				}
+
+				searchContent = container.NewGridWithColumns(2,
+					container.NewPadded(topResult),
+					container.NewVScroll(container.NewPadded(songList)),
+				)
+				searchContent = container.NewGridWithRows(2,
+					searchContent,
+					container.NewPadded(container.NewVBox(artistsTxt, container.NewHScroll(container.NewPadded(artists)))),
+				)
+				border.Objects[0] = searchContent
 			}
 
-			searchContent = container.NewGridWithColumns(2,
-				container.NewPadded(topResult),
-				container.NewVScroll(container.NewPadded(songList)),
-			)
-			searchContent = container.NewGridWithRows(2,
-				searchContent,
-				container.NewPadded(container.NewVBox(artistsTxt, container.NewHScroll(container.NewPadded(artists)))),
-			)
-			border.Objects[0] = searchContent
-		}
-
-		border.Refresh()
+			border.Refresh()
+		}()
 	}
 	return border
 }
@@ -217,14 +227,14 @@ func artistText(s []pl.Artist) string {
 	return str
 }
 
-func getImg(url string) image.Image {
+func getImg(url string) (image.Image, error) {
 	d, err := http.Get(url)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer d.Body.Close()
-	img, _, _ := image.Decode(d.Body)
-	return img
+	img, _, err := image.Decode(d.Body)
+	return img, err
 }
 
 func circleImage(img image.Image) image.Image {

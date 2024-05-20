@@ -36,7 +36,7 @@ func (button *RoundedButton) CreateRenderer() fyne.WidgetRenderer {
 func (button *RoundedButton) SetIcon(icon fyne.Resource) {
 	button.Icon = icon
 	res := theme.NewThemedResource(button.Icon)
-	res.ColorName = theme.ColorNameForeground
+	res.ColorName = theme.ColorNameBackground
 
 	button.icon.SetResource(res)
 }

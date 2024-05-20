@@ -309,7 +309,6 @@ func (c *MusicClient) Lyrics(videoId string) (Lyrics, error) {
 	if err != nil {
 		return Lyrics{}, err
 	}
-
 	req, _ := http.NewRequest("POST", "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", jsonBody(newMusicRequest(musicRequest{
 		BrowseID: browse,
 	})))
@@ -323,6 +322,10 @@ func (c *MusicClient) Lyrics(videoId string) (Lyrics, error) {
 	var response musicBrowseLyricsResponse
 	err = json.NewDecoder(res.Body).Decode(&response)
 	if err != nil {
+		return Lyrics{}, err
+	}
+
+	if len(response.Contents.SectionListRenderer.Contents) == 0 {
 		return Lyrics{}, err
 	}
 

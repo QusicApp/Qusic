@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"math"
 	"net/http"
@@ -67,14 +68,49 @@ func durString(dur time.Duration) string {
 	}
 }
 
-func setPlayedSong(song *pl.Song, w fyne.Window) {
-	logger.Infof("Now played song: %s (%s)", song.Name, song.URL)
+func durStringMS(dur time.Duration) string {
+	return fmt.Sprintf("%0d:%02d:%02d", int(dur.Minutes())%60, int(dur.Seconds())%60, int(dur.Milliseconds())%100)
+}
 
+func findMainColor(img image.Image) color.Color {
+	colorCounts := make(map[color.Color]int)
+
+	// Iterate over each pixel
+	bounds := img.Bounds()
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			col := img.At(x, y)
+			colorCounts[col]++
+		}
+	}
+
+	// Find the most frequent color
+	var mainColor color.Color
+	maxCount := 0
+	for col, count := range colorCounts {
+		if count > maxCount {
+			mainColor = col
+			maxCount = count
+		}
+	}
+
+	rgba := color.RGBAModel.Convert(mainColor).(color.RGBA)
+	rgba.R -= rgba.R / 2
+	rgba.G -= rgba.G / 2
+	rgba.B -= rgba.B / 2
+
+	return rgba
+}
+
+func getLyrics(song *pl.Song) {
 	source := preferences.String("lyrics.source")
+
 	var err error
 	switch source {
 	case "lrclib":
 		song.Lyrics, err = lyrics.GetSongLRCLIB(song.Name, song.Artists[0].Name, song.Album.Name, song.Duration, false)
+	case "youtubesub":
+		song.Lyrics, err = lyrics.GetLyricsYouTubeSubtitles(song.Video)
 	case "ytmusic":
 		song.Lyrics, err = lyrics.GetSongYTMusic(song.Video.ID)
 	case "genius":
@@ -90,13 +126,14 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 	syncedLyrics = song.Lyrics.SyncedLyrics
 
-	//lyricsScroll.Content = lyricsTxt
-	//lyricsScroll.Refresh()
+	lyricsAlt.Hide()
+	lyricsTxt.Show()
+
 	if len(syncedLyrics) == 0 {
 		if song.Lyrics.PlainLyrics == "" {
-			//lyricsScroll.Content = container.NewCenter(widget.NewRichTextFromMarkdown("# Sorry, no lyrics were found for this song. Maybe try a different source."))
-			//lyricsScroll.Refresh()
-
+			lyricsAlt.ParseMarkdown("# Sorry, no lyrics were found for this song. Maybe try a different source.")
+			lyricsAlt.Show()
+			lyricsTxt.Hide()
 		} else {
 			lyricsTxt.SetLyrics(strings.Split(song.Lyrics.PlainLyrics, "\n"), false)
 		}
@@ -108,17 +145,26 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 		lyricsTxt.SetLyrics(lines, true)
 	}
 	tabs.EnableIndex(2)
-	//lyricsTxt.Segments = append(lyricsTxt.Segments, &widget.TextSegment{
-	//	Style: widget.RichTextStyle{SizeName: theme.SizeNameSubHeadingText},
-	//	Text:  "Source: " + song.Lyrics.LyricSource,
-	//})
+}
 
-	image := song.Thumbnails[0]
-	d, err := http.Get(image.URL)
+func setPlayedSong(song *pl.Song, w fyne.Window) {
+	logger.Infof("Now played song: %s (%s)", song.Name, song.URL)
+
+	getLyrics(song)
+
+	lyricsTxt.SetCurrentLine(0)
+
+	d, err := http.Get(song.Thumbnails.Min().URL)
 	if err != nil {
 		return
 	}
-	img := canvas.NewImageFromReader(d.Body, song.Name)
+	image, _, _ := image.Decode(d.Body)
+	//lyricsRect.FillColor = findMainColor(image)
+	img := canvas.NewImageFromImage(image)
+
+	if preferences.Bool("hardware_acceleration") {
+		img.ScaleMode = canvas.ImageScaleFastest
+	}
 
 	songProgressSlider.Max = float64(song.Duration / time.Millisecond)
 	songProgressSlider.Enable()
@@ -236,7 +282,7 @@ func main() {
 		p, fulld = widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}), widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}})
 		prevf := 0.0
 
-		songProgressSlider.OnChanged = func(f float64) {
+		songProgressSlider.OnChangeEnded = func(f float64) {
 			passed := time.Duration(f) * time.Millisecond
 
 			p.Segments[0].(*widget.TextSegment).Text = durString(passed)

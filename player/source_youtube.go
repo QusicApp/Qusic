@@ -21,8 +21,6 @@ func (source YouTubeMusicSource) Search(query string) SearchResult {
 	var result SearchResult
 	res, _ := source.client.Search(query)
 	result.TopResult = source.Song(res.TopResult)
-	//d, _ := source.client.PlaybackData(res.TopResult.VideoID)
-	//fmt.Println(d.StreamingData.AdaptiveFormats[0].URL())
 	showVideos := fyne.CurrentApp().Preferences().Bool("ytmusic.show_video_results")
 	l := len(res.Songs)
 	if showVideos {

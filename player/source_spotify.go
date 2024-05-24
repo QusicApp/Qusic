@@ -1,6 +1,7 @@
 package player
 
 import (
+	"qusic/preferences"
 	"qusic/spotify"
 	"qusic/youtube"
 	"strconv"
@@ -13,49 +14,56 @@ import (
 
 var ytclient yt.Client
 
-func NewSpotifySource() SpotifySource {
-	return SpotifySource{client: spotify.New()}
+func NewSpotifySource(client *spotify.Client) SpotifySource {
+	return SpotifySource{client: client}
 }
 
 type SpotifySource struct {
 	client *spotify.Client
 }
 
+func (s SpotifySource) Client() *spotify.Client {
+	return s.client
+}
+
 func (source SpotifySource) GetVideo(s *Song) {
-	v, _ := (*youtube.MusicClient).SearchSongs(nil, s.Artists[0].Name+" - "+s.Name)
+	if preferences.Preferences.Bool("spotify.download_yt") || source.client.Cookie_sp_dc == "" {
+		v, _ := (*youtube.MusicClient).SearchSongs(nil, s.Artists[0].Name+" - "+s.Name)
 
-	var vid *youtube.Video
-	for _, video := range v {
-		if abs(video.Duration-s.Duration) <= 2*time.Second && strings.Contains(s.Name, video.Title) {
-			vid = &video
-			break
+		var vid *youtube.Video
+		for _, video := range v {
+			if abs(video.Duration-s.Duration) <= 2*time.Second && strings.Contains(s.Name, video.Title) {
+				vid = &video
+				break
+			}
 		}
-	}
 
-	if vid == nil {
-		vid = &v[0]
-	}
+		if vid == nil {
+			vid = &v[0]
+		}
 
-	video, err := ytclient.GetVideo(vid.VideoID)
-	if err != nil {
-		return
+		video, err := ytclient.GetVideo(vid.VideoID)
+		if err != nil {
+			return
+		}
+		s.Video = video
 	}
-	s.Video = video
-	s.Format = &video.Formats.Type("audio/webm; codecs=\"opus\"")[0]
 }
 
 func (source SpotifySource) Search(query string) SearchResult {
 	var result SearchResult
 	res, _ := source.client.Search(query, spotify.QueryAll, "", nil, nil, false)
 	if len(res.Tracks.Items) == 0 {
-		return result
+		goto csongs
 	}
 	result.TopResult = source.Song(res.Tracks.Items[0])
-	result.Songs = make([]Song, len(res.Tracks.Items[1:]))
-	for i, song := range res.Tracks.Items[1:] {
+
+	result.Songs = make([]Song, len(res.Tracks.Items))
+	for i, song := range res.Tracks.Items {
 		result.Songs[i] = source.Song(song)
 	}
 
+csongs:
 	result.Artists = make([]Artist, len(res.Artists.Items))
 	for i, artist := range res.Artists.Items {
 		result.Artists[i] = source.Artist(artist)

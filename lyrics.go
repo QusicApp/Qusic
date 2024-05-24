@@ -32,8 +32,8 @@ func lyricsPage(w fyne.Window) fyne.CanvasObject {
 	lyricsAlt.Hide()
 
 	page := container.NewStack(lyricsRect, container.NewCenter(lyricsAlt), lyricsTxt)
-	lyricsTxt.ActiveLyricPosition = fynesyncedlyrics.ActiveLyricPositionTop
-	lyricsTxt.LyricSizeName = theme.SizeNameHeadingText
+	//lyricsTxt.ActiveLyricPosition = fynesyncedlyrics.ActiveLyricPositionTop
+	lyricsTxt.TextSizeName = theme.SizeNameHeadingText
 
 	editor := lyricsEditorPage(w, page)
 	editor.Hide()

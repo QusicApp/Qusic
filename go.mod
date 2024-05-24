@@ -7,11 +7,12 @@ require (
 	github.com/kkdai/youtube/v2 v2.10.1
 )
 
-replace github.com/dweymouth/fyne-lyrics => ../fyne-lyrics
-
 require (
 	github.com/ebml-go/webm v0.0.0-20221117133942-84fa5245cf70
 	github.com/gopxl/beep v1.4.1
+	github.com/iyear/gowidevine v0.1.0
+	github.com/lostdusty/gobalt v1.0.6
+	github.com/tufteddeer/go-circleimage v0.0.0-20190706112238-da7082266f97
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 	layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32
 )
@@ -19,9 +20,9 @@ require (
 require (
 	fyne.io/systray v1.10.1-0.20231230205326-d160fd363db9 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/Eyevinn/mp4ff v0.39.0 // indirect
+	github.com/chmike/cmac-go v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/disintegration/imaging v1.6.2 // indirect
-	github.com/dweymouth/fyne-synced-lyrics v0.0.0-20240515154146-b0288eb89339 // indirect
 	github.com/ebitengine/oto/v3 v3.1.0 // indirect
 	github.com/ebml-go/ebml v0.0.0-20160925193348-ca8851a10894 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -30,23 +31,23 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240306074159-ea2d69986ecb // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
+	github.com/icza/bitio v1.1.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20240223122105-ce5225dcaa49 // indirect
 	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
 	github.com/jfreymuth/vorbis v1.0.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
-	github.com/lostdusty/gobalt v1.0.6 // indirect
-	github.com/matwachich/fynex-widgets v0.0.0-20240512211026-613b1fe4fedc // indirect
+	github.com/mewkiz/flac v1.0.8 // indirect
+	github.com/mewkiz/pkg v0.0.0-20230226050401-4010bf0fec14 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect
 	github.com/petar/GoLLRB v0.0.0-20130427215148-53be0d36a84c // indirect
-	github.com/pion/opus v0.0.0-20240409032234-867e82f70014 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rymdport/portal v0.2.2 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
-	github.com/tufteddeer/go-circleimage v0.0.0-20190706112238-da7082266f97 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -54,7 +55,7 @@ require (
 	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204 // indirect
-	github.com/dweymouth/fyne-lyrics v0.0.0-20240517003322-3c47c48b1751
+	github.com/dweymouth/fyne-lyrics v0.0.0-20240519155917-5aaa68b2b5d5
 	github.com/ebitengine/purego v0.7.1 // indirect
 	github.com/fredbi/uri v1.1.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20230506162202-1fdaa286a934 // indirect

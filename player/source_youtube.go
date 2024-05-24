@@ -2,10 +2,9 @@ package player
 
 import (
 	"fmt"
+	"qusic/preferences"
 	"qusic/youtube"
 	"unsafe"
-
-	"fyne.io/fyne/v2"
 )
 
 type YouTubeMusicSource struct {
@@ -14,14 +13,13 @@ type YouTubeMusicSource struct {
 
 func (source YouTubeMusicSource) GetVideo(s *Song) {
 	s.Video, _ = ytclient.GetVideo(s.URL)
-	s.Format = &s.Video.Formats.Type("audio/webm; codecs=\"opus\"")[0]
 }
 
 func (source YouTubeMusicSource) Search(query string) SearchResult {
 	var result SearchResult
 	res, _ := source.client.Search(query)
 	result.TopResult = source.Song(res.TopResult)
-	showVideos := fyne.CurrentApp().Preferences().Bool("ytmusic.show_video_results")
+	showVideos := preferences.Preferences.Bool("ytmusic.show_video_results")
 	l := len(res.Songs)
 	if showVideos {
 		l += len(res.Videos)

@@ -1,5 +1,9 @@
 package youtube
 
+// YouTube Music API Wrapper
+// Written by oq 2024
+// Params taken from https://www.npmjs.com/package/ytmusic-api
+
 import (
 	"bytes"
 	"encoding/json"
@@ -304,7 +308,33 @@ func (*MusicClient) LyricsBrowseID(videoId string) (string, error) {
 	return "", nil
 }
 
-func (c *MusicClient) Lyrics(videoId string) (Lyrics, error) {
+func (c *MusicClient) LyricsSynced(videoId string) ([]TimedLyricData, string, error) {
+	browse, err := c.LyricsBrowseID(videoId)
+	if err != nil {
+		return nil, "", err
+	}
+	mreq := musicRequest{BrowseID: browse}
+	mreq.Context.Client.ClientName = "26"
+	mreq.Context.Client.ClientVersion = "7.01.05"
+	req, _ := http.NewRequest("POST", "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", jsonBody(mreq))
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer res.Body.Close()
+
+	var response musicIOSBrowseLyricsResponse
+	err = json.NewDecoder(res.Body).Decode(&response)
+	if err != nil {
+		return nil, "", err
+	}
+
+	source := strings.TrimPrefix(response.Contents.ElementRenderer.NewElement.Type.ComponentType.Model.TimedLyricsModel.LyricsData.SourceMessage, "Source: ")
+	return response.Contents.ElementRenderer.NewElement.Type.ComponentType.Model.TimedLyricsModel.LyricsData.TimedLyricsData, source, nil
+}
+
+func (c *MusicClient) LyricsPlain(videoId string) (Lyrics, error) {
 	browse, err := c.LyricsBrowseID(videoId)
 	if err != nil {
 		return Lyrics{}, err
@@ -319,7 +349,7 @@ func (c *MusicClient) Lyrics(videoId string) (Lyrics, error) {
 	}
 	defer res.Body.Close()
 
-	var response musicBrowseLyricsResponse
+	var response musicWRBrowseLyricsResponse
 	err = json.NewDecoder(res.Body).Decode(&response)
 	if err != nil {
 		return Lyrics{}, err

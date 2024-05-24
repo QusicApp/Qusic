@@ -1,16 +1,18 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
 	"math"
 	"net/http"
-	"qusic/cobalt"
 	discordrpc "qusic/discord-rpc"
 	"qusic/logger"
 	"qusic/lyrics"
 	pl "qusic/player"
+	"qusic/preferences"
+	"qusic/spotify"
 	"strings"
 
 	"qusic/widgets"
@@ -28,7 +30,8 @@ import (
 )
 
 var youtubeSource pl.YouTubeMusicSource
-var spotifySource = pl.NewSpotifySource()
+var spotifyClient = spotify.New()
+var spotifySource = pl.NewSpotifySource(spotifyClient)
 
 var player = pl.New(youtubeSource)
 var app = a.NewWithID("il.oq.qusic")
@@ -36,7 +39,7 @@ var app = a.NewWithID("il.oq.qusic")
 var tabs *container.AppTabs
 var settingsButton *widget.Button
 var rpc = discordrpc.Client{ClientID: "1233164951342813275"}
-var fulld *widget.RichText
+var posd, fulld *widget.RichText
 var apprunning bool
 var bottom *fyne.Container
 
@@ -72,47 +75,23 @@ func durStringMS(dur time.Duration) string {
 	return fmt.Sprintf("%0d:%02d:%02d", int(dur.Minutes())%60, int(dur.Seconds())%60, int(dur.Milliseconds())%100)
 }
 
-func findMainColor(img image.Image) color.Color {
-	colorCounts := make(map[color.Color]int)
-
-	// Iterate over each pixel
-	bounds := img.Bounds()
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			col := img.At(x, y)
-			colorCounts[col]++
-		}
-	}
-
-	// Find the most frequent color
-	var mainColor color.Color
-	maxCount := 0
-	for col, count := range colorCounts {
-		if count > maxCount {
-			mainColor = col
-			maxCount = count
-		}
-	}
-
-	rgba := color.RGBAModel.Convert(mainColor).(color.RGBA)
-	rgba.R -= rgba.R / 2
-	rgba.G -= rgba.G / 2
-	rgba.B -= rgba.B / 2
-
-	return rgba
-}
+var ErrUnsupportedSource = errors.New("unsupported lyrics source")
 
 func getLyrics(song *pl.Song) {
-	source := preferences.String("lyrics.source")
+	source := preferences.Preferences.String("lyrics.source")
 
 	var err error
 	switch source {
 	case "lrclib":
 		song.Lyrics, err = lyrics.GetSongLRCLIB(song.Name, song.Artists[0].Name, song.Album.Name, song.Duration, false)
+	case "spotify":
+		song.Lyrics, err = lyrics.GetLyricsSpotify(spotifyClient, song.ID)
 	case "youtubesub":
 		song.Lyrics, err = lyrics.GetLyricsYouTubeSubtitles(song.Video)
-	case "ytmusic":
-		song.Lyrics, err = lyrics.GetSongYTMusic(song.Video.ID)
+	case "ytmusicsynced":
+		song.Lyrics, err = lyrics.GetSongYTMusicSynced(song.Video.ID)
+	case "ytmusicplain":
+		song.Lyrics, err = lyrics.GetSongYTMusicPlain(song.Video.ID)
 	case "genius":
 		song.Lyrics, err = lyrics.GetSongGenius(song.Artists[0].Name, song.Name)
 	case "lyrics.ovh":
@@ -162,7 +141,7 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	//lyricsRect.FillColor = findMainColor(image)
 	img := canvas.NewImageFromImage(image)
 
-	if preferences.Bool("hardware_acceleration") {
+	if preferences.Preferences.Bool("hardware_acceleration") {
 		img.ScaleMode = canvas.ImageScaleFastest
 	}
 
@@ -192,18 +171,16 @@ var (
 
 func main() {
 	logger.Info("Qusic [ made by oq ]")
-	if preferences.String("source") == "spotify" {
+	spotifyClient.Cookie_sp_dc = preferences.Preferences.String("spotify.sp_dc")
+	if preferences.Preferences.String("source") == "spotify" {
 		player.Source = spotifySource
-	}
-	if preferences.String("download.source") == "cobalt" {
-		player.Downloader = cobalt.New
 	}
 
 	app.SetIcon(resourceQusicPng)
 	var window fyne.Window
 
 	app.Lifecycle().SetOnStarted(func() {
-		if preferences.Bool("discord_rpc") {
+		if preferences.Preferences.Bool("discord_rpc") {
 			logger.Inf("Connecting to Discord RPC: ")
 			logger.Println(rpc.Connect())
 		}
@@ -212,7 +189,7 @@ func main() {
 		apprunning = true
 		window = app.NewWindow("Qusic")
 		window.SetCloseIntercept(func() {
-			if preferences.Bool("hide_app") {
+			if preferences.Preferences.Bool("hide_app") {
 				window.Hide()
 			} else {
 				app.Quit()
@@ -278,16 +255,15 @@ func main() {
 
 		songVolumeSlider = widget.NewSlider(-10, 10)
 
-		var p *widget.RichText
-		p, fulld = widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}), widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}})
+		posd, fulld = widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}), widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}})
 		prevf := 0.0
 
 		songProgressSlider.OnChangeEnded = func(f float64) {
 			passed := time.Duration(f) * time.Millisecond
 
-			p.Segments[0].(*widget.TextSegment).Text = durString(passed)
-			p.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
-			p.Refresh()
+			posd.Segments[0].(*widget.TextSegment).Text = durString(passed)
+			posd.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameForeground
+			posd.Refresh()
 			if math.Abs(f-prevf) > 1000 {
 				player.Seek(time.Duration(f) * time.Millisecond)
 				cs := player.CurrentSong()
@@ -318,7 +294,7 @@ func main() {
 			}
 		}
 
-		progress := container.NewBorder(nil, nil, p, fulld, songProgressSlider)
+		progress := container.NewBorder(nil, nil, posd, fulld, songProgressSlider)
 		control := container.NewGridWithRows(2, container.NewHBox(layout.NewSpacer(), back, pause, next, layout.NewSpacer()), progress)
 
 		bottom = container.NewGridWithColumns(3, layout.NewSpacer(), control, container.NewGridWithColumns(2, layout.NewSpacer(),
@@ -350,7 +326,7 @@ func main() {
 				}
 				passed := player.TimePosition()
 				cs := player.CurrentSong()
-				if preferences.Bool("discord_rpc") {
+				if preferences.Preferences.Bool("discord_rpc") {
 					rpc.SetActivity(discordrpc.Activity{
 						Type:    discordrpc.Listening,
 						Details: cs.Name,
@@ -390,27 +366,7 @@ func main() {
 
 					if len(q) <= i {
 						// stop
-						tabs.DisableIndex(2)
-						pause.Disable()
-						next.Disable()
-
-						fulld.Segments[0].(*widget.TextSegment).Text = "-:--"
-						fulld.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameDisabled
-
-						fulld.Refresh()
-
-						p.Segments[0].(*widget.TextSegment).Text = "0:00"
-						p.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameDisabled
-
-						p.Refresh()
-
-						songProgressSlider.Disable()
-
-						bottom.Objects[0] = layout.NewSpacer()
-						bottom.Refresh()
-
-						//lyricsScroll.Content = container.NewCenter(widget.NewRichTextFromMarkdown(lyricsTxtDefault))
-						//lyricsScroll.Refresh()
+						stopPlayer()
 						continue
 					}
 
@@ -428,4 +384,25 @@ func main() {
 		})))
 	}
 	app.Run()
+}
+
+func stopPlayer() {
+	tabs.DisableIndex(2)
+	pause.Disable()
+	next.Disable()
+
+	fulld.Segments[0].(*widget.TextSegment).Text = "-:--"
+	fulld.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameDisabled
+
+	fulld.Refresh()
+
+	posd.Segments[0].(*widget.TextSegment).Text = "0:00"
+	posd.Segments[0].(*widget.TextSegment).Style.ColorName = theme.ColorNameDisabled
+
+	posd.Refresh()
+
+	songProgressSlider.Disable()
+
+	bottom.Objects[0] = layout.NewSpacer()
+	bottom.Refresh()
 }

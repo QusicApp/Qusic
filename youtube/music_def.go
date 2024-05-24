@@ -270,7 +270,7 @@ type musicNextResponse struct {
 	} `json:"contents"`
 }
 
-type musicBrowseLyricsResponse struct {
+type musicWRBrowseLyricsResponse struct {
 	Contents struct {
 		SectionListRenderer struct {
 			Contents []struct {
@@ -280,6 +280,37 @@ type musicBrowseLyricsResponse struct {
 				} `json:"musicDescriptionShelfRenderer"`
 			} `json:"contents"`
 		} `json:"sectionListRenderer"`
+	} `json:"contents"`
+}
+
+type TimedLyricData struct {
+	LyricLine string `json:"lyricLine"`
+	CueRange  struct {
+		StartTimeMilliseconds util.StringInt `json:"startTimeMilliseconds"`
+		EndTimeMilliseconds   util.StringInt `json:"endTimeMilliseconds"`
+		Metadata              struct {
+			ID util.StringInt `json:"id"`
+		} `json:"metadata"`
+	} `json:"cueRange"`
+}
+type musicIOSBrowseLyricsResponse struct {
+	Contents struct {
+		ElementRenderer struct {
+			NewElement struct {
+				Type struct {
+					ComponentType struct {
+						Model struct {
+							TimedLyricsModel struct {
+								LyricsData struct {
+									TimedLyricsData []TimedLyricData `json:"timedLyricsData"`
+									SourceMessage   string           `json:"sourceMessage"`
+								} `json:"lyricsData"`
+							} `json:"timedLyricsModel"`
+						} `json:"model"`
+					} `json:"componentType"`
+				} `json:"type"`
+			} `json:"newElement"`
+		} `json:"elementRenderer"`
 	} `json:"contents"`
 }
 

@@ -7,6 +7,7 @@ import (
 	"image"
 	"net/http"
 	"qusic/logger"
+	"qusic/preferences"
 	"qusic/widgets"
 
 	pl "qusic/player"
@@ -14,6 +15,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -27,9 +29,13 @@ func play(i int, w fyne.Window) {
 
 	setPlayedSong(s, w)
 
-	logger.Inff("Playing song %s (%s): ", s.Name, preferences.StringWithFallback("download.source", "youtube"))
+	logger.Inff("Playing song %s: ", s.Name)
 	err := player.Play(i)
 	logger.Println(err)
+	if err != nil {
+		dialog.NewError(fmt.Errorf("There was an error playing your song, please check logs"), w).Show()
+		stopPlayer()
+	}
 	if err != nil {
 		return
 	}
@@ -40,9 +46,13 @@ func playnow(so *pl.Song, w fyne.Window) {
 
 	setPlayedSong(so, w)
 
-	logger.Inff("Playing song %s (%s): ", so.Name, preferences.StringWithFallback("download.source", "youtube"))
+	logger.Inff("Playing song %s: ", so.Name)
 	err := player.PlayNow(so)
 	logger.Println(err)
+	if err != nil {
+		dialog.NewError(fmt.Errorf("There was an error playing your song, please check logs"), w).Show()
+		stopPlayer()
+	}
 	if err != nil {
 		return
 	}
@@ -84,7 +94,7 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 					}
 					img := canvas.NewImageFromImage(image)
 					img.SetMinSize(fyne.NewSize(48, 48))
-					if preferences.Bool("hardware_acceleration") {
+					if preferences.Preferences.Bool("hardware_acceleration") {
 						img.ScaleMode = canvas.ImageScaleFastest
 					}
 					res := &widgets.SongResult{
@@ -189,7 +199,7 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 					}
 
 					image := canvas.NewImageFromImage(circleImage(img))
-					if preferences.Bool("hardware_acceleration") {
+					if preferences.Preferences.Bool("hardware_acceleration") {
 						image.ScaleMode = canvas.ImageScaleFastest
 					}
 					image.FillMode = canvas.ImageFillContain

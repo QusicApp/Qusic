@@ -3,8 +3,8 @@ package cobalt
 import (
 	"io"
 	"net/http"
+	"qusic/preferences"
 
-	"fyne.io/fyne/v2"
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/mp3"
 	"github.com/gopxl/beep/vorbis"
@@ -16,7 +16,7 @@ import (
 
 // TODO fix wav&mp3, fix seeking
 func New(video *youtube.Video) (beep.StreamSeekCloser, beep.Format, error) {
-	format := fyne.CurrentApp().Preferences().StringWithFallback("download.cobalt.format", "wav")
+	format := preferences.Preferences.StringWithFallback("download.cobalt.format", "wav")
 	settings := gobalt.Settings{
 		Url:             "https://youtube.com/watch?v=" + video.ID,
 		FilenamePattern: gobalt.Classic,

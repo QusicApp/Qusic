@@ -2,6 +2,7 @@ package player
 
 import (
 	"qusic/lyrics"
+	"qusic/preferences"
 	"qusic/streamer"
 	"time"
 
@@ -83,7 +84,7 @@ const (
 
 type Song struct {
 	Video  *yt.Video
-	Format *yt.Format
+	Format beep.Format
 
 	Provider int
 
@@ -113,8 +114,6 @@ type Player struct {
 	streamer *streamer.Streamer
 
 	SongFinished chan struct{}
-
-	Downloader func(video *yt.Video) (beep.StreamSeekCloser, beep.Format, error)
 }
 
 func New(src Source) *Player {
@@ -128,8 +127,6 @@ func New(src Source) *Player {
 		currentSong: -1,
 
 		SongFinished: make(chan struct{}),
-
-		Downloader: streamer.New,
 	}
 
 	speaker.Init(streamer.SampleRate, streamer.SampleRate.N(time.Second/10))
@@ -239,17 +236,32 @@ func (p *Player) Play(i int) error {
 	if i < 0 || len(p.queue) < i {
 		return nil
 	}
-	streamer, _, err := p.Downloader(p.queue[i].Video)
+	var (
+		stream beep.StreamSeekCloser
+		format beep.Format
+		err    error
+	)
+	switch p.queue[i].Provider {
+	case Spotify:
+		client := p.Source.(SpotifySource).Client()
+		if preferences.Preferences.Bool("spotify.download_yt") || client.Cookie_sp_dc == "" {
+			stream, format, err = streamer.NewYTWebMOpusStreamer(p.queue[i].Video)
+		}
+		stream, format, err = streamer.NewSpotifyMP4FlacStreamer(p.queue[i].ID, client)
+	case YTMusic:
+		stream, format, err = streamer.NewYTWebMOpusStreamer(p.queue[i].Video)
+	}
 
 	if err != nil {
 		return err
 	}
 
 	p.currentSong = i
+	p.queue[i].Format = format
 
 	speaker.Clear()
 
-	p.streamer.SetStreamer(streamer)
+	p.streamer.SetStreamer(stream)
 	speaker.Play(beep.Seq(p.streamer, beep.Callback(func() {
 		p.SongFinished <- struct{}{}
 	})))

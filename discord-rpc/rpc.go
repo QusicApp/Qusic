@@ -11,6 +11,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// Discord RPC module
+// IPC code taken from https://github.com/rikkuness/discord-rpc
+
 type Command struct {
 	Nonce   string         `json:"nonce"`
 	Args    map[string]any `json:"args"`

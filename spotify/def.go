@@ -414,6 +414,27 @@ type SearchObject[T any] struct {
 	Items    []T    `json:"items"`
 }
 
+type clientTokenRequest struct {
+	ClientData struct {
+		ClientVersion string         `json:"client_version"`
+		ClientId      string         `json:"client_id"`
+		JSSDKData     map[string]any `json:"js_sdk_data"`
+	} `json:"client_data"`
+}
+
+type GrantedToken struct {
+	Token               string `json:"token"`
+	ExpiresAfterSeconds int    `json:"expires_after_seconds"`
+	RefreshAfterSeconds int    `json:"refresh_after_seconds"`
+	Domains             []struct {
+		Domain string `json:"domain"`
+	} `json:"domains"`
+}
+
+type clientTokenResponse struct {
+	GrantedToken GrantedToken `json:"granted_token"`
+}
+
 type Lyrics struct {
 	SyncType string `json:"syncType"`
 	Lines    []struct {
@@ -440,4 +461,116 @@ type Lyrics struct {
 		HighlightText int `json:"highlightText"`
 	} `json:"colors"`
 	HasVocalRemoval bool `json:"hasVocalRemoval"`
+}
+
+type FileList []struct {
+	FileID string `json:"file_id"`
+	Format string `json:"format"`
+}
+
+func (f FileList) Format(s string) string {
+	for _, format := range f {
+		if format.Format == s {
+			return format.FileID
+		}
+	}
+	return ""
+}
+
+type TrackMetadata struct {
+	Album struct {
+		Artist []struct {
+			GID  string `json:"gid"`
+			Name string `json:"name"`
+		} `json:"artist"`
+		CoverGroup struct {
+			Image []struct {
+				FileID string `json:"file_id"`
+				Height int    `json:"height"`
+				Size   string `json:"size"`
+				Width  int    `json:"width"`
+			} `json:"image"`
+		} `json:"coverGroup"`
+		Date struct {
+			Day   int `json:"day"`
+			Month int `json:"month"`
+			Year  int `json:"year"`
+		} `json:"date"`
+		GID      string `json:"gid"`
+		Label    string `json:"label"`
+		Licensor struct {
+			UUID string `json:"uuid"`
+		} `json:"licensor"`
+		Name             string `json:"name"`
+		PrereleaseConfig struct {
+			EarliestCoverartRevealDate struct {
+				Day   int `json:"day"`
+				Hour  int `json:"hour"`
+				Month int `json:"month"`
+				Year  int `json:"year"`
+			} `json:"earliest_coverart_reveal_date"`
+			EarliestRevealDate struct {
+				Day   int `json:"day"`
+				Hour  int `json:"hour"`
+				Month int `json:"month"`
+				Year  int `json:"year"`
+			} `json:"earliest_reveal_date"`
+		} `json:"prerelease_config"`
+	} `json:"album"`
+	Artist []struct {
+		GID  string `json:"artist_gid"`
+		Name string `json:"artist_name"`
+	} `json:"artist"`
+	ArtistWithRole []struct {
+		GID  string `json:"artist_gid"`
+		Name string `json:"artist_name"`
+		Role string `json:"role"`
+	} `json:"artist_with_role"`
+	CanonicalURI          string `json:"canonical_uri"`
+	DiscNumber            int    `json:"disc_number"`
+	Duration              int    `json:"duration"`
+	EarliestLiveTimestamp int    `json:"earliest_live_timestamp"`
+	ExternalID            []struct {
+		ID   string `json:"id"`
+		Type string `json:"type"`
+	} `json:"external_id"`
+	File                  FileList `json:"file"`
+	GID                   string   `json:"gid"`
+	HasLyrics             bool     `json:"has_lyrics"`
+	LanguageOfPerformance []string `json:"language_of_performance"`
+	Licensor              struct {
+		UUID string `json:"uuid"`
+	} `json:"licensor"`
+	Name          string `json:"name"`
+	Number        int    `json:"number"`
+	OriginalAudio struct {
+		UUID string `json:"uuid"`
+	} `json:"original_audio"`
+	OriginalTitle    string `json:"original_title"`
+	Popularity       int    `json:"popularity"`
+	PrereleaseConfig struct {
+		EarliestCoverartRevealDate struct {
+			Day   int `json:"day"`
+			Hour  int `json:"hour"`
+			Month int `json:"month"`
+			Year  int `json:"year"`
+		} `json:"earliest_coverart_reveal_date"`
+		EarliestRevealDate struct {
+			Day   int `json:"day"`
+			Hour  int `json:"hour"`
+			Month int `json:"month"`
+			Year  int `json:"year"`
+		} `json:"earliest_reveal_date"`
+	} `json:"prerelease_config"`
+	Preview FileList `json:"preview"`
+}
+
+type Seektable struct {
+	PaddingSamples      int     `json:"padding_samples"`
+	EncoderDelaySamples int     `json:"encoder_delay_samples"`
+	PSSH                string  `json:"pssh"`
+	Timescale           int     `json:"timescale"`
+	IndexRange          []int   `json:"index_range"`
+	Segments            [][]int `json:"segments"`
+	Offset              int     `json:"offset"`
 }

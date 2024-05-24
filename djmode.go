@@ -35,15 +35,15 @@ func djModePage() fyne.CanvasObject {
 		player.SetSpeed(f)
 	}
 
-	vinyl := canvas.NewImageFromFile("vinyl.png")
-	vinyl.FillMode = canvas.ImageFillOriginal
+	//vinyl := canvas.NewImageFromFile("vinyl.png")
+	//vinyl.FillMode = canvas.ImageFillOriginal
 
-	wheel := &Wheel{img: vinyl}
+	//wheel := &Wheel{img: vinyl}
 
 	bottom := container.NewGridWithColumns(3,
 		container.NewBorder(container.NewCenter(widget.NewRichTextFromMarkdown("## Speed")), nil, widget.NewLabel("x0.25"), widget.NewLabel("x2"), speedSlider),
 	)
-	border := container.NewBorder(nil, bottom, nil, nil, container.NewCenter(wheel))
+	border := container.NewBorder(nil, bottom, nil, nil /*container.NewCenter(wheel)*/)
 
 	return border
 }

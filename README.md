@@ -8,7 +8,6 @@ Free music app written in Go
 - Lyric support: LRCLIB (synced), YouTube Music (synced), Spotify (synced), Genius, Lyrics.ovh, YouTube Subtitles (synced)
 
 ## Installation
-### [FFMPEG](https://ffmpeg.org/) is required for the app to work!!
 
 ### [Releases](https://github.com/oq-x/qusic/releases)
 

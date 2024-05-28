@@ -313,6 +313,17 @@ func main() {
 		window.Resize(size)
 
 		window.Show()
+		window.Canvas().SetOnTypedKey(func(ke *fyne.KeyEvent) {
+			if ke.Name == "LeftShift" {
+				if settingsDebugModeCheck != nil {
+					if settingsDebugModeCheck.Hidden {
+						settingsDebugModeCheck.Show()
+					} else {
+						settingsDebugModeCheck.Hide()
+					}
+				}
+			}
+		})
 
 		tick := time.NewTicker(time.Millisecond)
 		for {

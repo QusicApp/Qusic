@@ -15,6 +15,7 @@ import (
 )
 
 var settingsDialog *dialog.CustomDialog
+var settingsDebugModeCheck *widget.Check
 
 func settingsGeneralTab() fyne.CanvasObject {
 	discordRPCConnectingText := widget.NewLabel("connecting...")
@@ -42,10 +43,17 @@ func settingsGeneralTab() fyne.CanvasObject {
 	})
 	hardwareAcceleration.SetChecked(preferences.Preferences.Bool("hardware_acceleration"))
 
+	settingsDebugModeCheck = widget.NewCheck("Debug mode", func(b bool) {
+		preferences.Preferences.SetBool("debug_mode", b)
+	})
+	settingsDebugModeCheck.SetChecked(preferences.Preferences.Bool("debug_mode"))
+	settingsDebugModeCheck.Hide()
+
 	return container.NewVBox(
 		container.NewHBox(enableDiscordRPC, discordRPCConnectingText),
 		hideApp,
 		hardwareAcceleration,
+		settingsDebugModeCheck,
 		widget.NewRichTextFromMarkdown("## Links"),
 		container.NewHBox(
 			widget.NewHyperlink("GitHub Repository", &url.URL{

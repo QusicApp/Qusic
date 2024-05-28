@@ -28,6 +28,10 @@ func NewStreamer() *Streamer {
 	}
 }
 
+func (s *Streamer) Playing() bool {
+	return s.v.Streamer.(*beep.Ctrl).Streamer != nil
+}
+
 func (s *Streamer) SetStreamer(st beep.StreamSeekCloser) {
 	s.v.Streamer.(*beep.Ctrl).Streamer = st
 }

@@ -1,3 +1,4 @@
+בס"ד
 # Qusic
 Free music app written in Go
 

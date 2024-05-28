@@ -180,7 +180,7 @@ func (p *Player) CurrentSong() *Song {
 }
 
 func (p *Player) Playing() bool {
-	return p.currentSong != -1
+	return p.currentSong != -1 && p.streamer.Playing()
 }
 
 func (p *Player) postodur(pos int) time.Duration {
@@ -246,8 +246,9 @@ func (p *Player) Play(i int) error {
 		client := p.Source.(SpotifySource).Client()
 		if preferences.Preferences.Bool("spotify.download_yt") || client.Cookie_sp_dc == "" {
 			stream, format, err = streamer.NewYTWebMOpusStreamer(p.queue[i].Video)
+		} else {
+			stream, format, err = streamer.NewSpotifyMP4AACStreamer(p.queue[i].ID, client)
 		}
-		stream, format, err = streamer.NewSpotifyMP4FlacStreamer(p.queue[i].ID, client)
 	case YTMusic:
 		stream, format, err = streamer.NewYTWebMOpusStreamer(p.queue[i].Video)
 	}

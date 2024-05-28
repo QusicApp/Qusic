@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/Eyevinn/mp4ff v0.39.0
 	github.com/ebml-go/webm v0.0.0-20221117133942-84fa5245cf70
 	github.com/gopxl/beep v1.4.1
 	github.com/iyear/gowidevine v0.1.0
@@ -20,7 +21,6 @@ require (
 require (
 	fyne.io/systray v1.10.1-0.20231230205326-d160fd363db9 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
-	github.com/Eyevinn/mp4ff v0.39.0 // indirect
 	github.com/chmike/cmac-go v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/ebitengine/oto/v3 v3.1.0 // indirect
@@ -31,13 +31,10 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240306074159-ea2d69986ecb // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
-	github.com/icza/bitio v1.1.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20240223122105-ce5225dcaa49 // indirect
 	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
 	github.com/jfreymuth/vorbis v1.0.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
-	github.com/mewkiz/flac v1.0.8 // indirect
-	github.com/mewkiz/pkg v0.0.0-20230226050401-4010bf0fec14 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect

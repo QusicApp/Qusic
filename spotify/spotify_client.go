@@ -29,9 +29,10 @@ type Client struct {
 
 	Cookie_sp_dc string
 
-	currentClientID          string
-	currentAccessToken       string
-	currentAccessTokenExpiry time.Time
+	currentClientID             string
+	currentAccessToken          string
+	currentAccessTokenExpiry    time.Time
+	currentAccessTokenAnonymous bool
 }
 
 func (c *Client) expired() bool {
@@ -101,14 +102,19 @@ func (c *Client) getAccessToken(sp_dc string) error {
 		ClientID                         string `json:"clientId"`
 		AccessToken                      string `json:"accessToken"`
 		AccessTokenExpirationTimestampMS int64  `json:"accessTokenExpirationTimestampMs"`
+		Anonymous                        bool   `json:"isAnonymous"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		fmt.Println(err)
 		return err
 	}
 	c.currentAccessToken = response.AccessToken
 	c.currentClientID = response.ClientID
 	c.currentAccessTokenExpiry = time.UnixMilli(response.AccessTokenExpirationTimestampMS)
+	c.currentAccessTokenAnonymous = response.Anonymous
+
+	if response.Anonymous && sp_dc != "" {
+		return fmt.Errorf("anonymous token returned for authorized request")
+	}
 
 	return nil
 }
@@ -214,7 +220,7 @@ func (c *Client) Seektable(fileName string) (Seektable, error) {
 }
 
 func (c *Client) WidevineLicense(challenge []byte) ([]byte, error) {
-	req, err := c.newRequest(http.MethodPost, "https://gue1-spclient.spotify.com/widevine-license/v1/audio/license", true, bytes.NewReader(challenge))
+	req, err := c.newRequest(http.MethodPost, "https://gew1-spclient.spotify.com/widevine-license/v1/audio/license", true, bytes.NewReader(challenge))
 	if err != nil {
 		return nil, err
 	}

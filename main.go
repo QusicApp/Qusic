@@ -258,7 +258,7 @@ func main() {
 		posd, fulld = widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}), widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}})
 		prevf := 0.0
 
-		songProgressSlider.OnChangeEnded = func(f float64) {
+		songProgressSlider.OnChanged = func(f float64) {
 			passed := time.Duration(f) * time.Millisecond
 
 			posd.Segments[0].(*widget.TextSegment).Text = durString(passed)

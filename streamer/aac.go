@@ -490,6 +490,7 @@ type ic struct {
 	scale_factor_grouping uint
 	max_sfb               uint
 
+	num_sec             [8]uint
 	num_swb             uint
 	num_windows         uint
 	num_window_groups   uint
@@ -512,6 +513,7 @@ type ic struct {
 }
 
 func ics_info(rd Reader, ics *ic) {
+	fmt.Println("*ics_info")
 	rd.Read(1) // reserved
 	ics.window_sequence, _ = rd.Read(2)
 	ics.window_shape, _ = rd.Read(1)
@@ -522,17 +524,18 @@ func ics_info(rd Reader, ics *ic) {
 	} else {
 		ics.max_sfb, _ = rd.Read(6)
 	}
-	window_sequence(rd, ics)
+	window_grouping_info(rd, ics)
 
 	if ics.window_sequence != EIGHT_SHORT_SEQUENCE {
 		ics.predictor_data_present, _ = rd.ReadFlag()
 	}
 }
 
-func window_sequence(rd Reader, ics *ic) {
+func window_grouping_info(rd Reader, ics *ic) {
+	fmt.Println("*window_grouping_info")
 	switch ics.window_sequence {
 	case ONLY_LONG_SEQUENCE, LONG_START_SEQUENCE, LONG_STOP_SEQUENCE:
-		fmt.Println("long")
+		//fmt.Println("long")
 		ics.num_windows = 1
 		ics.num_window_groups = 1
 		ics.window_group_length[ics.num_window_groups-1] = 1
@@ -542,7 +545,7 @@ func window_sequence(rd Reader, ics *ic) {
 		} else {
 			ics.num_swb = num_swb_960_window[rd.sf_index]
 		}
-		for i := uint(0); i < ics.num_swb-1; i++ {
+		for i := uint(0); i < ics.num_swb; i++ {
 			ics.sect_sfb_offset[0][i] = swb_offset_1024_window[rd.sf_index][i]
 			ics.swb_offset[i] = swb_offset_1024_window[rd.sf_index][i]
 		}
@@ -554,6 +557,7 @@ func window_sequence(rd Reader, ics *ic) {
 }
 
 func channel_pair_element(rd Reader) {
+	fmt.Println("*channel_pair_element")
 	var element element
 	var (
 		_, _ = rd.Read(4) // element_instance_tag
@@ -571,8 +575,8 @@ func channel_pair_element(rd Reader) {
 		ics_info(rd, &ics1)
 		ics1.ms_mask_present, _ = rd.Read(2)
 		if ics1.ms_mask_present == 1 {
-			for g := uint(0); g < ics1.num_window_groups-1; g++ {
-				for sfb := uint(0); sfb < ics1.max_sfb-1; sfb++ {
+			for g := uint(0); g < ics1.num_window_groups; g++ {
+				for sfb := uint(0); sfb < ics1.max_sfb; sfb++ {
 					ics1.ms_used[g][sfb], _ = rd.Read(1)
 				}
 			}
@@ -587,12 +591,43 @@ func channel_pair_element(rd Reader) {
 }
 
 func individual_channel_stream(rd Reader, ics *ic, spec_data *[1024]int16) {
+	fmt.Println("*individual_channel_stream")
 	ics.global_gain, _ = rd.Read(8)
 	if !ics.element.common_window {
-		section_data(rd, ics)
+		ics_info(rd, ics)
 	}
 	section_data(rd, ics)
 	decode_scale_factors(rd, ics)
+	spectral_data(rd, ics)
+}
+
+func spectral_data(rd Reader, ics *ic) {
+	fmt.Println("*spectral_data")
+	var (
+		p      uint = 0
+		groups uint = 0
+		nshort      = rd.frame_length / 8
+	)
+	for g := uint(0); g < ics.num_window_groups; g++ {
+		p = nshort * groups
+		for i := uint(0); i < ics.num_sec[g]; i++ {
+			section_codebook := ics.sect_cb[g][i]
+			var increment uint = 4
+			if section_codebook >= 5 {
+				increment = 2
+			}
+			switch section_codebook {
+			case ZERO_HCB, NOISE_HCB, INTENSITY_HCB, INTENSITY_HCB2:
+				p += ics.sect_sfb_offset[g][ics.sect_end[g][i]] - ics.sect_sfb_offset[g][ics.sect_start[g][i]]
+			default:
+				fmt.Println("spectral cb")
+				for k := ics.sect_sfb_offset[g][ics.sect_start[g][i]]; k < ics.sect_sfb_offset[g][ics.sect_end[g][i]]; k++ {
+					k += increment
+				}
+				//huffman_spectral_data
+			}
+		}
+	}
 }
 
 func huffman_scale_factor(rd Reader) uint {
@@ -608,6 +643,7 @@ func huffman_scale_factor(rd Reader) uint {
 }
 
 func decode_scale_factors(rd Reader, ics *ic) {
+	fmt.Println("*decode_scale_factors")
 	var (
 		g, sfb, t      uint
 		noise_pcm_flag = true
@@ -627,7 +663,7 @@ func decode_scale_factors(rd Reader, ics *ic) {
 				is_position += (t - 60)
 				ics.scale_factors[g][sfb] = is_position
 			case NOISE_HCB:
-				fmt.Print(g, ics.num_window_groups, sfb, "noise")
+				fmt.Println(g, ics.num_window_groups, sfb, "noise")
 				if noise_pcm_flag {
 					noise_pcm_flag = false
 					t, _ = rd.Read(9)
@@ -638,6 +674,7 @@ func decode_scale_factors(rd Reader, ics *ic) {
 				noise_energy += t
 				ics.scale_factors[g][sfb] = noise_energy
 			default:
+				fmt.Println(g, ics.num_window_groups, sfb, "unknown", ics.sfb_cb[g][sfb])
 				ics.scale_factors[g][sfb] = 0
 				t = huffman_scale_factor(rd)
 				scale_factor += (t - 60)
@@ -652,46 +689,49 @@ func decode_scale_factors(rd Reader, ics *ic) {
 }
 
 func section_data(rd Reader, ics *ic) {
-	var section_bits int
+	fmt.Println("*section_data")
+	var section_bits = 5
 	if ics.window_sequence == EIGHT_SHORT_SEQUENCE {
 		section_bits = 3
-	} else {
-		section_bits = 5
 	}
 	section_escape_value := uint(1<<section_bits) - 1
 
-	for g := uint(0); g < ics.num_window_groups-1; g++ {
+	for g := uint(0); g < ics.num_window_groups; g++ {
 		var (
-			k, i, section_length uint
+			k, i uint
 		)
 		for k < ics.max_sfb {
-			section_codebook_bits := 4
-			ics.sect_cb[g][i], _ = rd.Read(section_codebook_bits)
-			if ics.sect_cb[g][i] == 13 {
+			var section_length uint
+			ics.sect_cb[g][i], _ = rd.Read(4)
+			if ics.sect_cb[g][i] == NOISE_HCB {
 				ics.noise_used = true
 			}
-		}
-		section_length_increment, _ := rd.Read(section_bits)
-		for section_length_increment == section_escape_value {
+			section_length_increment, _ := rd.Read(section_bits)
+			for section_length_increment == section_escape_value {
+				section_length += section_length_increment
+				section_length_increment, _ = rd.Read(section_bits)
+			}
 			section_length += section_length_increment
-			section_length_increment, _ = rd.Read(section_bits)
+			ics.sect_start[g][i] = k
+			ics.sect_end[g][i] = k + section_length
+			if k+section_length >= 8*15 {
+				fmt.Println("error0")
+				//error
+				return
+			}
+			if i >= 8*15 {
+				fmt.Println("error1")
+				//error
+				return
+			}
+			for sfb := k; sfb < k+section_length; sfb++ {
+				ics.sfb_cb[g][sfb] = ics.sect_cb[g][i]
+				fmt.Printf("ics.sect_cb[%d][%d]: %d\n", g, i, ics.sect_cb[g][i])
+			}
+			k += section_length
+			i++
 		}
-		section_length += section_length_increment
-		ics.sect_start[g][i] = k
-		ics.sect_end[g][i] = k
-		if k+section_length >= 8*15 {
-			//error
-			return
-		}
-		if i >= 8*15 {
-			//error
-			return
-		}
-		for sfb := k; sfb < k+section_length-1; sfb++ {
-			ics.sfb_cb[g][sfb] = ics.sect_cb[g][i]
-		}
-		k += section_length
-		i++
+		ics.num_sec[g] = i
 	}
 }
 

@@ -15,50 +15,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/tufteddeer/go-circleimage"
 )
-
-func play(i int, w fyne.Window) {
-	q := player.Queue()
-	s := q[i]
-	player.GetVideo(s)
-
-	logger.Inff("Playing song %s: ", s.Name)
-	err := player.Play(i)
-	songProgressSlider.SetValue(0)
-	logger.Println(err)
-
-	setPlayedSong(s, w)
-	if err != nil {
-		dialog.NewError(fmt.Errorf("There was an error playing your song, please check logs"), w).Show()
-		stopPlayer()
-	}
-	if err != nil {
-		return
-	}
-}
-
-func playnow(so *pl.Song, w fyne.Window) {
-	player.GetVideo(so)
-
-	logger.Inff("Playing song %s: ", so.Name)
-	err := player.PlayNow(so)
-	songProgressSlider.SetValue(0)
-	logger.Println(err)
-
-	setPlayedSong(so, w)
-	if err != nil {
-		dialog.NewError(fmt.Errorf("There was an error playing your song, please check logs"), w).Show()
-		stopPlayer()
-	}
-	if err != nil {
-		return
-	}
-}
 
 func searchPageSkeleton() fyne.CanvasObject {
 	songsTxt := canvas.NewText("Songs", theme.ForegroundColor())

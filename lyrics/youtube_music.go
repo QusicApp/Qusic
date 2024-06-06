@@ -17,9 +17,6 @@ func GetSongYTMusicSynced(videoId string) (Song, error) {
 	lyrics, src, err := (*youtube.MusicClient).LyricsSynced(nil, videoId)
 	var syncedLyrics []SyncedLyric
 	for _, lyric := range lyrics {
-		if lyric.LyricLine == "♪" {
-			continue
-		}
 		syncedLyrics = append(syncedLyrics, SyncedLyric{
 			At:    time.Duration(lyric.CueRange.StartTimeMilliseconds.Int()) * time.Millisecond,
 			Index: len(syncedLyrics),

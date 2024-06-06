@@ -27,11 +27,12 @@ func play(i int, w fyne.Window) {
 	s := q[i]
 	player.GetVideo(s)
 
-	setPlayedSong(s, w)
-
 	logger.Inff("Playing song %s: ", s.Name)
 	err := player.Play(i)
+	songProgressSlider.SetValue(0)
 	logger.Println(err)
+
+	setPlayedSong(s, w)
 	if err != nil {
 		dialog.NewError(fmt.Errorf("There was an error playing your song, please check logs"), w).Show()
 		stopPlayer()
@@ -44,11 +45,12 @@ func play(i int, w fyne.Window) {
 func playnow(so *pl.Song, w fyne.Window) {
 	player.GetVideo(so)
 
-	setPlayedSong(so, w)
-
 	logger.Inff("Playing song %s: ", so.Name)
 	err := player.PlayNow(so)
+	songProgressSlider.SetValue(0)
 	logger.Println(err)
+
+	setPlayedSong(so, w)
 	if err != nil {
 		dialog.NewError(fmt.Errorf("There was an error playing your song, please check logs"), w).Show()
 		stopPlayer()
@@ -56,6 +58,54 @@ func playnow(so *pl.Song, w fyne.Window) {
 	if err != nil {
 		return
 	}
+}
+
+func searchPageSkeleton() fyne.CanvasObject {
+	songsTxt := canvas.NewText("Songs", theme.ForegroundColor())
+	songsTxt.TextSize = theme.TextHeadingSize()
+	songsTxt.TextStyle.Bold = true
+
+	songList := container.NewVBox(songsTxt)
+	for i := 0; i < 10; i++ {
+		rect := canvas.NewRectangle(theme.DisabledButtonColor())
+		rect.SetMinSize(fyne.NewSize(0, 48))
+		rect.CornerRadius = 5
+		songList.Add(rect)
+		if i != 9 {
+			songList.Add(canvas.NewRectangle(theme.DisabledColor()))
+		}
+	}
+
+	topResultTxt := canvas.NewText("Top Result", theme.ForegroundColor())
+	topResultTxt.TextSize = theme.TextHeadingSize()
+	topResultTxt.TextStyle.Bold = true
+
+	topResultRect := canvas.NewRectangle(theme.DisabledButtonColor())
+	topResultRect.CornerRadius = 5
+
+	h := 96 + theme.TextSubHeadingSize() + theme.CaptionTextSize()
+	topResultRect.SetMinSize(fyne.NewSize(0, h))
+
+	topResult := container.NewVBox(
+		topResultTxt,
+		topResultRect,
+	)
+
+	artistsTxt := canvas.NewText("Artists", theme.ForegroundColor())
+	artistsTxt.TextSize = theme.TextHeadingSize()
+	artistsTxt.TextStyle.Bold = true
+	artists := container.NewGridWrap(fyne.NewSize(150, 150))
+	for i := 0; i < 5; i++ {
+		artists.Add(container.NewPadded(canvas.NewCircle(theme.DisabledButtonColor())))
+	}
+
+	return container.NewGridWithRows(2,
+		container.NewGridWithColumns(2,
+			container.NewPadded(topResult),
+			container.NewVScroll(container.NewPadded(songList)),
+		),
+		container.NewPadded(container.NewVBox(artistsTxt, container.NewHScroll(container.NewPadded(artists)))),
+	)
 }
 
 func searchPage(w fyne.Window) fyne.CanvasObject {
@@ -72,6 +122,8 @@ func searchPage(w fyne.Window) fyne.CanvasObject {
 
 	searchBar.OnSubmitted = func(s string) {
 		go func() {
+			border.Objects[0] = searchPageSkeleton()
+			border.Refresh()
 			logger.Infof("Searching query \"%s\"", s)
 			results := player.Search(s)
 

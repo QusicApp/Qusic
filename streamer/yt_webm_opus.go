@@ -3,6 +3,7 @@ package streamer
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -88,7 +89,7 @@ func (s *pcmStreamer) Seek(n int) error {
 	s.pos = n
 	s.pcm = nil
 	s.pcmIdx = 0
-	return nil
+	return s.err
 }
 
 func (s *pcmStreamer) Position() int {
@@ -127,6 +128,7 @@ func (s *pcmStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 		}
 		if len(s.pcm) <= s.pcmIdx || s.err != nil {
 			//audio done
+			fmt.Println("audio done")
 			break
 		}
 		for ; n < len(samples); n++ {

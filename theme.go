@@ -18,8 +18,6 @@ func (m myTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) colo
 	switch name {
 	case theme.ColorNameBackground:
 		return BackgroundColor
-	case theme.ColorNamePrimary:
-		return m.Color(theme.ColorNameForeground, variant)
 	case theme.ColorNameOverlayBackground:
 		return OverlayBackgroundColor
 	case theme.ColorNameHyperlink:
@@ -33,9 +31,6 @@ func (m myTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 }
 
 func (m myTheme) Font(style fyne.TextStyle) fyne.Resource {
-	if style.Monospace {
-		return theme.DefaultTheme().Font(style)
-	}
 	if style.Bold {
 		if style.Italic {
 			return resourceRobotoBoldItalicTtf

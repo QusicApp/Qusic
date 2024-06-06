@@ -3,7 +3,7 @@ module qusic
 go 1.22.2
 
 require (
-	fyne.io/fyne/v2 v2.4.6-0.20240427161808-e05c0a509f3d
+	fyne.io/fyne/v2 v2.4.6-0.20240603133300-d41f1e22dc25
 	github.com/kkdai/youtube/v2 v2.10.1
 )
 
@@ -20,7 +20,7 @@ require (
 
 require (
 	fyne.io/systray v1.10.1-0.20231230205326-d160fd363db9 // indirect
-	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/chmike/cmac-go v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/ebitengine/oto/v3 v3.1.0 // indirect
@@ -28,7 +28,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20240101223322-6e1efdc71b7a // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240306074159-ea2d69986ecb // indirect
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20240223122105-ce5225dcaa49 // indirect

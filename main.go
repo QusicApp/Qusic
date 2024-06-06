@@ -132,13 +132,13 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 	getLyrics(song)
 
 	lyricsTxt.SetCurrentLine(0)
+	pause.SetIcon(theme.MediaPauseIcon())
 
 	d, err := http.Get(song.Thumbnails.Min().URL)
 	if err != nil {
 		return
 	}
 	image, _, _ := image.Decode(d.Body)
-	//lyricsRect.FillColor = findMainColor(image)
 	img := canvas.NewImageFromImage(image)
 
 	if preferences.Preferences.Bool("hardware_acceleration") {
@@ -372,6 +372,7 @@ func main() {
 				}
 			case <-player.SongFinished:
 				{
+					prevf = 0
 					q := player.Queue()
 					i := player.CurrentIndex() + 1
 

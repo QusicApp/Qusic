@@ -119,13 +119,10 @@ type Player struct {
 func New(src Source) *Player {
 	st := streamer.NewStreamer()
 	p := &Player{
-		queue:  make([]*Song, 0),
-		Source: src,
-
-		streamer: st,
-
-		currentSong: -1,
-
+		queue:        make([]*Song, 0),
+		Source:       src,
+		streamer:     st,
+		currentSong:  -1,
 		SongFinished: make(chan struct{}),
 	}
 

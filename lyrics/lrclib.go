@@ -33,7 +33,7 @@ func parseSyncedLyrics(str string) []SyncedLyric {
 			continue
 		}
 		stamp := line[:i]
-		lyric := line[i:]
+		lyric := strings.TrimSpace(line[i:])
 
 		stamp = stamp[1 : len(stamp)-1]
 		sep := strings.Split(stamp, ":")
@@ -47,6 +47,9 @@ func parseSyncedLyrics(str string) []SyncedLyric {
 		seconds, err := strconv.ParseFloat(sep[1], 64)
 		if err != nil {
 			continue
+		}
+		if lyric == "" {
+			lyric = "♪"
 		}
 
 		duration := (time.Duration(minutes) * time.Minute) + time.Duration(seconds*float64(time.Second))
@@ -107,37 +110,7 @@ func GetSongLRCLIB(trackName, artistName, albumName string, duration time.Durati
 	var data songData
 	err = json.NewDecoder(res.Body).Decode(&data)
 	s.PlainLyrics = data.PlainLyrics
-
-	lines := strings.Split(data.SyncedLyrics, "\n")
-	for _, line := range lines {
-		i := strings.Index(line, " ")
-		if i == -1 {
-			continue
-		}
-		stamp := line[:i]
-		lyric := line[i:]
-
-		stamp = stamp[1 : len(stamp)-1]
-		sep := strings.Split(stamp, ":")
-		if len(sep) != 2 {
-			continue
-		}
-		minutes, err := strconv.ParseInt(sep[0], 10, 64)
-		if err != nil {
-			continue
-		}
-		seconds, err := strconv.ParseFloat(sep[1], 64)
-		if err != nil {
-			continue
-		}
-
-		duration := (time.Duration(minutes) * time.Minute) + time.Duration(seconds*float64(time.Second))
-		s.SyncedLyrics = append(s.SyncedLyrics, SyncedLyric{
-			At:    duration,
-			Lyric: lyric,
-			Index: len(s.SyncedLyrics),
-		})
-	}
+	s.SyncedLyrics = parseSyncedLyrics(data.SyncedLyrics)
 
 	return s, err
 }

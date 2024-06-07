@@ -143,6 +143,14 @@ func (p *Player) SetVolume(v float64) {
 	p.streamer.SetVolume(v)
 }
 
+func (p *Player) SetMute(b bool) {
+	p.streamer.SetMute(b)
+}
+
+func (p *Player) Mute() bool {
+	return p.streamer.Mute()
+}
+
 func (p *Player) Queue() []*Song {
 	return p.queue
 }

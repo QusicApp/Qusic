@@ -24,6 +24,7 @@ import (
 var lyricsTxt *fynesyncedlyrics.LyricsViewer
 var lyricsRect *canvas.Rectangle
 var lyricsAlt *widget.RichText
+var lyricPage *fyne.Container
 
 func lyricsPage(w fyne.Window) fyne.CanvasObject {
 	lyricsTxt = fynesyncedlyrics.NewLyricsViewer()
@@ -31,11 +32,9 @@ func lyricsPage(w fyne.Window) fyne.CanvasObject {
 	lyricsAlt = widget.NewRichText()
 	lyricsAlt.Hide()
 
-	page := container.NewStack(lyricsRect, container.NewCenter(lyricsAlt), lyricsTxt)
-	//lyricsTxt.ActiveLyricPosition = fynesyncedlyrics.ActiveLyricPositionTop
-	lyricsTxt.TextSizeName = theme.SizeNameHeadingText
+	lyricPage = container.NewStack(lyricsRect, container.NewCenter(lyricsAlt), lyricsTxt)
 
-	editor := lyricsEditorPage(w, page)
+	editor := lyricsEditorPage(w, lyricPage)
 	editor.Hide()
 
 	return container.NewBorder(container.NewHBox(
@@ -62,14 +61,14 @@ func lyricsPage(w fyne.Window) fyne.CanvasObject {
 						return
 					}
 					editor.Show()
-					page.Hide()
+					lyricPage.Hide()
 				} else {
 					editor.Hide()
-					page.Show()
+					lyricPage.Show()
 				}
 			},
 		},
-	), nil, nil, nil, page, editor)
+	), nil, nil, nil, lyricPage, editor)
 }
 
 func syncedLyricsEditorPage() fyne.CanvasObject {

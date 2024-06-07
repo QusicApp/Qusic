@@ -56,6 +56,14 @@ func (s *Streamer) Volume() float64 {
 	return s.v.Volume
 }
 
+func (s *Streamer) SetMute(b bool) {
+	s.v.Silent = b
+}
+
+func (s *Streamer) Mute() bool {
+	return s.v.Silent
+}
+
 func (s *Streamer) Stream(samples [][2]float64) (n int, ok bool) {
 	return s.r.Stream(samples)
 }

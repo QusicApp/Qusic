@@ -162,7 +162,8 @@ func main() {
 		songProgressSlider = widget.NewSlider(0, 0)
 		songProgressSlider.Disable()
 
-		songVolumeSlider = widget.NewSlider(-10, 10)
+		songVolumeSlider = widget.NewSlider(-2, 2)
+		songVolumeSlider.Step = 0.01
 
 		posd, fulld = widget.NewRichText(&widget.TextSegment{Text: "0:00", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}}), widget.NewRichText(&widget.TextSegment{Text: "-:--", Style: widget.RichTextStyle{ColorName: theme.ColorNameDisabled}})
 		prevf := 0.0
@@ -192,9 +193,10 @@ func main() {
 		volumeIcon := widget.NewIcon(theme.VolumeMuteIcon())
 
 		songVolumeSlider.OnChanged = func(f float64) {
+			player.SetMute(f == -1)
 			player.SetVolume(f)
 			switch {
-			case f == -10:
+			case f == -2:
 				volumeIcon.SetResource(theme.VolumeMuteIcon())
 			case f >= 0:
 				volumeIcon.SetResource(theme.VolumeUpIcon())

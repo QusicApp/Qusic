@@ -17,9 +17,15 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	fynesyncedlyrics "github.com/dweymouth/fyne-lyrics"
 )
 
 func getLyrics(song *pl.Song) {
+	lyricsTxt = fynesyncedlyrics.NewLyricsViewer()
+	lyricsTxt.TextSizeName = theme.SizeNameHeadingText
+	lyricPage.Objects[2] = lyricsTxt
+	lyricPage.Refresh()
+
 	source := preferences.Preferences.String("lyrics.source")
 
 	var err error
@@ -73,7 +79,6 @@ func setPlayedSong(song *pl.Song, w fyne.Window) {
 
 	getLyrics(song)
 
-	lyricsTxt.SetCurrentLine(0)
 	pause.SetIcon(theme.MediaPauseIcon())
 
 	d, err := http.Get(song.Thumbnails.Min().URL)

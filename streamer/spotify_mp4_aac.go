@@ -6,6 +6,7 @@ import (
 	"io"
 	"qusic/preferences"
 	"qusic/spotify"
+	"qusic/streamer/aac"
 
 	"github.com/Eyevinn/mp4ff/bits"
 	"github.com/Eyevinn/mp4ff/mp4"
@@ -79,21 +80,21 @@ type fmp4Streamer struct {
 	err error
 }
 
-func (f *fmp4Streamer) Stream(samples [][2]float64) (int, bool) {
-	if f.i == 9 /*f.i > 9 && f.i < 15*/ {
-		frame := f.frames[f.i]
+func (f *fmp4Streamer) Stream(samples [][2]float64) (n int, ok bool) {
+	frame := f.frames[f.i]
 
-		fmt.Println("decoding frame", f.i)
-		DecodeAACFrame(frame.Data, f.frequencyIndex, f.frameLengthFlag)
-	}
+	aac.DecodeAACFrame(frame.Data, f.frequencyIndex, f.frameLengthFlag)
+
 	f.i++
 	f.samplesPerFrame = len(samples)
 	return len(samples), true
 }
-func (f fmp4Streamer) Err() error  { return f.err }
-func (fmp4Streamer) Close() error  { return nil }
-func (fmp4Streamer) Len() int      { return 0 }
-func (fmp4Streamer) Position() int { return 0 }
+func (f fmp4Streamer) Err() error { return f.err }
+func (fmp4Streamer) Close() error { return nil }
+func (fmp4Streamer) Len() int     { return 0 }
+func (f fmp4Streamer) Position() int {
+	return f.i * f.samplesPerFrame
+}
 func (f fmp4Streamer) Seek(i int) error {
 	f.i = i / f.samplesPerFrame
 	return nil

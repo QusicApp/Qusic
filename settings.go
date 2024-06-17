@@ -73,8 +73,8 @@ func settingsLogTab() fyne.CanvasObject {
 	errors.TextStyle.Monospace = true
 	errors.Wrapping = fyne.TextWrapBreak
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Log", log),
-		container.NewTabItem("Errors", errors),
+		container.NewTabItem("Log", container.NewVScroll(log)),
+		container.NewTabItem("Errors", container.NewVScroll(errors)),
 	)
 
 	return tabs
@@ -231,16 +231,16 @@ func settingsStreamingTab() fyne.CanvasObject {
 	}
 	sel.SetSelectedIndex(sources[preferences.Preferences.StringWithFallback("streaming.format", "aac")])
 
-	pre := widget.NewCheck("Decode all frames before playing", func(b bool) {
+	/*pre := widget.NewCheck("Decode all frames before playing", func(b bool) {
 		preferences.Preferences.SetBool("streaming.predecode", b)
 	})
-	pre.SetChecked(preferences.Preferences.Bool("streaming.predecode"))
+	pre.SetChecked(preferences.Preferences.Bool("streaming.predecode"))*/
 
 	return container.NewVBox(
 		widget.NewRichTextFromMarkdown("# Streaming"),
 		container.NewBorder(nil, nil, widget.NewLabel("Selected Streaming Format"), nil, container.NewGridWithColumns(3, sel)),
 		widget.NewRichTextFromMarkdown("*Spotify only supports AAC*"),
-		pre,
+		//pre,
 	)
 }
 

@@ -3,7 +3,6 @@ package streamer
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"qusic/preferences"
 	"qusic/spotify"
 	"qusic/streamer/aac"
@@ -11,6 +10,7 @@ import (
 	"github.com/Eyevinn/mp4ff/bits"
 	"github.com/Eyevinn/mp4ff/mp4"
 	"github.com/gopxl/beep"
+	"gonum.org/v1/gonum/dsp/fourier"
 )
 
 func NewSpotifyMP4AACStreamer(trackId string, client *spotify.Client) (beep.StreamSeekCloser, beep.Format, error) {
@@ -30,7 +30,7 @@ func NewSpotifyMP4AACStreamer(trackId string, client *spotify.Client) (beep.Stre
 	}
 	audioConfig := mp4a.Esds.DecConfigDescriptor.DecSpecificInfo.DecConfig
 	if len(audioConfig) != 2 {
-		return nil, beep.Format{}, fmt.Errorf("audio config missing")
+		return nil, beep.Format{}, ErrAudioConfigMissing
 	}
 	r := bits.NewReader(bytes.NewReader(audioConfig))
 	trex := file.Moov.Mvex.Trex
@@ -51,7 +51,7 @@ func NewSpotifyMP4AACStreamer(trackId string, client *spotify.Client) (beep.Stre
 	}
 
 	if !preferences.Preferences.Bool("debug_mode") {
-		return nil, beep.Format{}, fmt.Errorf("The Spotify mp4 decoder is not yet ready. In more technical info: I am making an AAC LC (Advanced Audio Coding Low Complexity) decoder, which is the audio format found in mp4s downloaded from Spotify. In the mean time, you can use the YouTube Music source or enable the \"Download songs from YouTube\" option in the settings, or wait for the decoder to be implemented.")
+		return nil, beep.Format{}, fmt.Errorf("The aac decoder is not yet functional. Enable debug mode or wait for the aac decoder to be finished")
 	}
 
 	return &fmp4Streamer{
@@ -73,60 +73,61 @@ type fmp4Streamer struct {
 
 	frames []mp4.FullSample
 
-	samplesPerFrame int
-
 	i int
 
-	err error
+	err    error
+	closed bool
 }
 
-func (f *fmp4Streamer) Stream(samples [][2]float64) (n int, ok bool) {
-	frame := f.frames[f.i]
+func coef(coef1, coef2 [1024]float64) (smp0, smp1 []float64) {
+	smp0, smp1 = make([]float64, 1024), make([]float64, 1024)
 
-	fmt.Println("frame", f.i)
-	c1, c2 := aac.DecodeAACFrame(frame.Data, f.frequencyIndex, f.frameLengthFlag)
+	ifft := fourier.NewFFT(1024)
 
-	fmt.Sprint(c1, c2)
+	tds1 := ifft.Coefficients(nil, coef1[:])
+	tds2 := ifft.Coefficients(nil, coef2[:])
 
-	/*spec_coeff1 := make([]complex128, 1024)
-	spec_coeff2 := make([]complex128, 1024)
-	for i := 0; i < 1024; i++ {
-		spec_coeff1[i] = complex(c1[i], 0)
-		spec_coeff2[i] = complex(c2[i], 0)
+	for i := 0; i < len(tds1); i++ {
+		smp0[i] = real(tds1[i])
+		smp1[i] = real(tds2[i])
 	}
 
-	ifft := fourier.NewCmplxFFT(1024)
+	return smp0, smp1
+}
 
-	tds1 := ifft.Coefficients(nil, spec_coeff1)
-	tds2 := ifft.Coefficients(nil, spec_coeff2)
+func (s *fmp4Streamer) Stream(samples [][2]float64) (n int, ok bool) {
+	if s.closed {
+		s.err = ErrClosed
+		return 0, false
+	}
+	frame := s.frames[s.i]
 
-	for i := range samples {
-		samples[i][0] = real(tds1[i])
-		samples[i][1] = real(tds2[i])
+	fmt.Println("frame", s.i)
+	pcm0, _ := coef(aac.DecodeAACFrame(frame.Data, s.frequencyIndex, s.frameLengthFlag))
+	fmt.Println(pcm0)
+
+	/*for i := range samples {
+		samples[i][0] = pcm0[i]
 	}*/
 
-	f.i++
-	f.samplesPerFrame = len(samples)
+	s.i++
 	return len(samples), true
 }
-func (f fmp4Streamer) Err() error { return f.err }
-func (fmp4Streamer) Close() error { return nil }
-func (fmp4Streamer) Len() int     { return 0 }
-func (f fmp4Streamer) Position() int {
-	return f.i * f.samplesPerFrame
-}
-func (f fmp4Streamer) Seek(i int) error {
-	if f.samplesPerFrame == 0 {
-		return nil
+func (s fmp4Streamer) Err() error { return s.err }
+func (s fmp4Streamer) Close() error {
+	if s.closed {
+		return ErrAlreadyClosed
 	}
-	f.i = i / f.samplesPerFrame
+	s.closed = true
 	return nil
 }
-
-type ReadCloser struct {
-	io.Reader
+func (s fmp4Streamer) Len() int {
+	return 512 * len(s.frames)
 }
-
-func (ReadCloser) Close() error {
+func (s fmp4Streamer) Position() int {
+	return s.i * 512
+}
+func (s fmp4Streamer) Seek(i int) error {
+	s.i = i / 512
 	return nil
 }

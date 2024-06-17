@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"net/http"
 	"qusic/logger"
@@ -14,7 +13,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	fynesyncedlyrics "github.com/dweymouth/fyne-lyrics"
@@ -124,7 +122,8 @@ func play(i int, w fyne.Window) {
 
 	setPlayedSong(s, w)
 	if err != nil {
-		dialog.NewError(fmt.Errorf("There was an error playing your song, please check logs"), w).Show()
+		//dialog.NewError(fmt.Errorf("There was an error playing your song, please check logs"), w).Show()
+		showToast("There was an error playing your song, please check logs")
 		stopPlayer()
 	}
 	if err != nil {
@@ -142,7 +141,7 @@ func playnow(so *pl.Song, w fyne.Window) {
 
 	setPlayedSong(so, w)
 	if err != nil {
-		dialog.NewError(fmt.Errorf("There was an error playing your song, please check logs"), w).Show()
+		showToast("There was an error playing your song, please check logs")
 		stopPlayer()
 	}
 	if err != nil {

@@ -213,13 +213,26 @@ func main() {
 			container.NewBorder(nil, nil, volumeIcon, nil, songVolumeSlider),
 		))
 
+		toastRect := canvas.NewRectangle(theme.DisabledColor())
+		toastRect.CornerRadius = 5
+		toastContainer = container.NewStack(
+			toastRect,
+			widget.NewRichText(),
+		)
+		toastContainer.Hide()
+
 		window.SetContent(container.NewStack(
 			container.NewBorder(nil,
 				container.NewStack(
 					canvas.NewRectangle(color.Black),
 					container.NewPadded(bottom),
 				), nil, container.NewVBox(settingsButton), tabs),
-			container.NewVBox(layout.NewSpacer(), widget.NewLabel(constant.APP_VERSION)),
+
+			container.NewVBox(layout.NewSpacer(), container.NewHBox(layout.NewSpacer(), widget.NewLabel(constant.APP_VERSION))),
+			container.NewGridWithRows(7,
+				layout.NewSpacer(), layout.NewSpacer(), layout.NewSpacer(), layout.NewSpacer(), layout.NewSpacer(), layout.NewSpacer(),
+				container.NewVBox(container.NewGridWithColumns(3, layout.NewSpacer(), toastContainer)),
+			),
 		))
 
 		size := window.Content().MinSize()

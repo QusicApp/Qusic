@@ -6,6 +6,18 @@ import (
 	"github.com/kkdai/youtube/v2"
 )
 
+const (
+	ErrAlreadyClosed      err = "already closed"
+	ErrClosed             err = "closed"
+	ErrAudioConfigMissing err = "audio config missing"
+)
+
+type err string
+
+func (e err) Error() string {
+	return string(e)
+}
+
 var yt youtube.Client
 
 var SampleRate beep.SampleRate = 48000

@@ -2,7 +2,6 @@ package streamer
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -57,8 +56,6 @@ func NewYTWebMOpusStreamer(video *youtube.Video) (beep.StreamSeekCloser, beep.Fo
 	}, form, err
 }
 
-var ErrAlreadyClosed = errors.New("already closed")
-
 type pcmStreamer struct {
 	pcm       []int16
 	pcmIdx    int
@@ -111,7 +108,7 @@ func (s *pcmStreamer) Close() error {
 
 func (s *pcmStreamer) Stream(samples [][2]float64) (n int, ok bool) {
 	if s.closed {
-		s.err = ErrAlreadyClosed
+		s.err = ErrClosed
 		return
 	}
 	if s.pos >= SampleRate.N(s.duration) {

@@ -14,6 +14,7 @@ import (
 )
 
 func NewYTWebMOpusStreamer(video *youtube.Video) (beep.StreamSeekCloser, beep.Format, error) {
+	fmt.Println(video == nil, video.Formats == nil)
 	format := video.Formats.Type("audio/webm; codecs=\"opus\"")[0]
 	stream, _, err := yt.GetStream(video, &format)
 

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"net/url"
+	"qusic/constant"
 	"qusic/logger"
 	"qusic/preferences"
 
@@ -50,23 +50,16 @@ func settingsGeneralTab() fyne.CanvasObject {
 	settingsDebugModeCheck.Hide()
 
 	return container.NewVBox(
+		widget.NewRichTextFromMarkdown("# General"),
 		container.NewHBox(enableDiscordRPC, discordRPCConnectingText),
 		hideApp,
 		hardwareAcceleration,
 		settingsDebugModeCheck,
 		widget.NewRichTextFromMarkdown("## Links"),
 		container.NewHBox(
-			widget.NewHyperlink("GitHub Repository", &url.URL{
-				Scheme: "https",
-				Host:   "github.com",
-				Path:   "oq-x/qusic",
-			}),
+			widget.NewHyperlink("GitHub Repository", constant.GITHUB_URL.URL()),
 			canvas.NewCircle(theme.ForegroundColor()),
-			widget.NewHyperlink("Discord Server", &url.URL{
-				Scheme: "https",
-				Host:   "discord.gg",
-				Path:   "naVkn4NSXx",
-			}),
+			widget.NewHyperlink("Discord Server", constant.DISCORD_URL.URL()),
 		),
 	)
 }
@@ -87,11 +80,13 @@ func settingsLogTab() fyne.CanvasObject {
 	return tabs
 }
 
+// music-sources
 var sources = map[string]int{
 	"ytmusic": 0,
 	"spotify": 1,
 }
 
+// lyric-sources
 var lsources = map[string]int{
 	"lrclib":        0,
 	"spotify":       1,
@@ -100,6 +95,12 @@ var lsources = map[string]int{
 	"youtubesub":    4,
 	"genius":        5,
 	"lyrics.ovh":    6,
+}
+
+// formats
+var formats = map[string]int{
+	"aac":  0,
+	"opus": 1,
 }
 
 func settingsSourcesTab() fyne.CanvasObject {
@@ -208,6 +209,41 @@ func settingsSourcesTab() fyne.CanvasObject {
 	)
 }
 
+func settingsStreamingTab() fyne.CanvasObject {
+	sel := widget.NewSelect([]string{
+		"M4A/AAC-LC",
+		"WebM/Opus-CELT",
+	}, nil)
+	sel.OnChanged = func(s string) {
+		i := sel.SelectedIndex()
+		switch i {
+		case 0:
+			s = "aac"
+		case 1:
+			if preferences.Preferences.String("source") == "spotify" {
+				s = "aac"
+			}
+			s = "opus"
+		default:
+			return
+		}
+		preferences.Preferences.SetString("streaming.format", s)
+	}
+	sel.SetSelectedIndex(sources[preferences.Preferences.StringWithFallback("streaming.format", "aac")])
+
+	pre := widget.NewCheck("Decode all frames before playing", func(b bool) {
+		preferences.Preferences.SetBool("streaming.predecode", b)
+	})
+	pre.SetChecked(preferences.Preferences.Bool("streaming.predecode"))
+
+	return container.NewVBox(
+		widget.NewRichTextFromMarkdown("# Streaming"),
+		container.NewBorder(nil, nil, widget.NewLabel("Selected Streaming Format"), nil, container.NewGridWithColumns(3, sel)),
+		widget.NewRichTextFromMarkdown("*Spotify only supports AAC*"),
+		pre,
+	)
+}
+
 func settings(w fyne.Window) {
 	doneButton := widget.NewButton("Done", func() {
 		settingsDialog.Hide()
@@ -216,6 +252,7 @@ func settings(w fyne.Window) {
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", settingsGeneralTab()),
 		container.NewTabItem("Sources", settingsSourcesTab()),
+		container.NewTabItem("Streaming", settingsStreamingTab()),
 		container.NewTabItem("Log", settingsLogTab()),
 	)
 

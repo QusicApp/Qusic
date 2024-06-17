@@ -32,6 +32,7 @@ const (
 	ESC_HCB        = 11
 	QUAD_LEN       = 4
 	PAIR_LEN       = 2
+	LEN_TAG        = 4
 	NOISE_HCB      = 13
 	INTENSITY_HCB2 = 14
 	INTENSITY_HCB  = 15
@@ -39,4 +40,8 @@ const (
 
 const (
 	LAST_CB_IDX = 11
+)
+
+const (
+	MAX_SFB = 51
 )

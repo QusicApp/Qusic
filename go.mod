@@ -44,6 +44,7 @@ require (
 	github.com/rymdport/portal v0.2.2 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
+	gonum.org/v1/gonum v0.15.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

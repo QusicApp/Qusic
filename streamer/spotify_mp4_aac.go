@@ -83,7 +83,27 @@ type fmp4Streamer struct {
 func (f *fmp4Streamer) Stream(samples [][2]float64) (n int, ok bool) {
 	frame := f.frames[f.i]
 
-	aac.DecodeAACFrame(frame.Data, f.frequencyIndex, f.frameLengthFlag)
+	fmt.Println("frame", f.i)
+	c1, c2 := aac.DecodeAACFrame(frame.Data, f.frequencyIndex, f.frameLengthFlag)
+
+	fmt.Sprint(c1, c2)
+
+	/*spec_coeff1 := make([]complex128, 1024)
+	spec_coeff2 := make([]complex128, 1024)
+	for i := 0; i < 1024; i++ {
+		spec_coeff1[i] = complex(c1[i], 0)
+		spec_coeff2[i] = complex(c2[i], 0)
+	}
+
+	ifft := fourier.NewCmplxFFT(1024)
+
+	tds1 := ifft.Coefficients(nil, spec_coeff1)
+	tds2 := ifft.Coefficients(nil, spec_coeff2)
+
+	for i := range samples {
+		samples[i][0] = real(tds1[i])
+		samples[i][1] = real(tds2[i])
+	}*/
 
 	f.i++
 	f.samplesPerFrame = len(samples)
@@ -96,6 +116,9 @@ func (f fmp4Streamer) Position() int {
 	return f.i * f.samplesPerFrame
 }
 func (f fmp4Streamer) Seek(i int) error {
+	if f.samplesPerFrame == 0 {
+		return nil
+	}
 	f.i = i / f.samplesPerFrame
 	return nil
 }

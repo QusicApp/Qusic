@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"math"
+	"qusic/constant"
 	discordrpc "qusic/discord-rpc"
 	"qusic/logger"
 	"qusic/lyrics"
@@ -212,11 +213,14 @@ func main() {
 			container.NewBorder(nil, nil, volumeIcon, nil, songVolumeSlider),
 		))
 
-		window.SetContent(container.NewBorder(nil,
-			container.NewStack(
-				canvas.NewRectangle(color.Black),
-				container.NewPadded(bottom),
-			), nil, container.NewVBox(settingsButton), tabs))
+		window.SetContent(container.NewStack(
+			container.NewBorder(nil,
+				container.NewStack(
+					canvas.NewRectangle(color.Black),
+					container.NewPadded(bottom),
+				), nil, container.NewVBox(settingsButton), tabs),
+			container.NewVBox(layout.NewSpacer(), widget.NewLabel(constant.APP_VERSION)),
+		))
 
 		size := window.Content().MinSize()
 		size.Width *= 2.5

@@ -1,22 +1,18 @@
 package streamer
 
 import (
+	"qusic/util"
+
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/effects"
 	"github.com/kkdai/youtube/v2"
 )
 
 const (
-	ErrAlreadyClosed      err = "already closed"
-	ErrClosed             err = "closed"
-	ErrAudioConfigMissing err = "audio config missing"
+	ErrAlreadyClosed      util.StringError = "already closed"
+	ErrClosed             util.StringError = "closed"
+	ErrAudioConfigMissing util.StringError = "audio config missing"
 )
-
-type err string
-
-func (e err) Error() string {
-	return string(e)
-}
 
 var yt youtube.Client
 

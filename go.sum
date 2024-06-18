@@ -52,6 +52,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/Eyevinn/mp4ff v0.39.0 h1:WV2Omq57y1BvcVPayjyuiIK8/pF5Tb/H/cgPY+wFZMQ=
 github.com/Eyevinn/mp4ff v0.39.0/go.mod h1:w/6GSa5ghZ1VavzJK6McQ2/flx8mKtcrKDr11SsEweA=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
+github.com/argusdusty/gofft v1.2.1 h1:Ir33IyKzMPvgK70PPWtmHpzjbTsUkL51EunWn4mrksA=
+github.com/argusdusty/gofft v1.2.1/go.mod h1:OABUQ4XoJ49ucI4ZPv0i6a0x3KKM4yDSK5rsMwFL43Q=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
@@ -278,6 +280,7 @@ github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
+github.com/ktye/fft v0.0.0-20160109133121-5beb24bb6a43/go.mod h1:NOC+5BizuazWsAS/Ge7DXbXTrYzmmDXGqypnTaeNGcc=
 github.com/lostdusty/gobalt v1.0.6 h1:vCVAlZS7dyc8x3Xdt4WmMeO9v2wriSIXwaK+binNz2U=
 github.com/lostdusty/gobalt v1.0.6/go.mod h1:gv+Hmbv0SC3lWpJvUvxJYRmmcuBjlmhKCIRskk0lSjY=
 github.com/magiconair/properties v1.8.5/go.mod h1:y3VJvCyxH9uVvJTWEGAELF3aiYNyPKd5NZ3oSwXrF60=
@@ -296,6 +299,7 @@ github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh
 github.com/mitchellh/mapstructure v1.4.1/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
+github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12/go.mod h1:i/KKcxEWEO8Yyl11DYafRPKOPVYTrhxiTRigjtEEXZU=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
@@ -770,3 +774,5 @@ layeh.com/gopus v0.0.0-20210501142526-1ee02d434e32/go.mod h1:yDtyzWZDFCVnva8NGtg
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
+scientificgo.org/fft v0.0.0-20181116155530-840c07972bf0/go.mod h1:kjCWUUjwe8nWCDf1noBWJt/zni0qg84jDUBfJhH/ftA=
+scientificgo.org/testutil v0.0.0-20181122181445-a2006c033c77/go.mod h1:Go6R4b+9YkFocMo3H3vNQ7tjbrX9Rc12wal7NZjvPXg=

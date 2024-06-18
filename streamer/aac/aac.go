@@ -1,5 +1,7 @@
 package aac
 
+// library to decode aac frames based on faad2
+
 import (
 	"bytes"
 
@@ -23,7 +25,7 @@ func decode_fil(rd Reader) {
 	}
 }
 
-func DecodeAACFrame(data []byte, sampleRateIndex, frameSizeFlag uint) (coef1, coef2 [1024]float64) {
+func DecodeAACFrame(data []byte, sampleRateIndex, frameSizeFlag uint) /*(coef1, coef2 [1024]float64)*/ (samples0, samples1 []float64) {
 	rd := Reader{
 		bits.NewReader(bytes.NewReader(data)),
 		sampleRateIndex,
@@ -35,7 +37,13 @@ func DecodeAACFrame(data []byte, sampleRateIndex, frameSizeFlag uint) (coef1, co
 	elemType, _ := rd.Read(3)
 	switch elemType {
 	case CPE:
-		return decode_cpe(rd)
+		coef1, coef2 := decode_cpe(rd)
+		smp1, smp2 := make([]float64, 2048), make([]float64, 2048)
+
+		imdct(new_mdct(rd.frame_length), coef1[:], smp1)
+		imdct(new_mdct(rd.frame_length), coef2[:], smp2)
+
+		return smp1, smp2
 	default:
 		return
 	}

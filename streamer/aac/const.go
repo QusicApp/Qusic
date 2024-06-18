@@ -45,3 +45,9 @@ const (
 const (
 	MAX_SFB = 51
 )
+
+const (
+	FRAC_BITS = iota + 31
+	FRAC_SIZE
+	FRAC_MUL = 1 << (FRAC_SIZE - FRAC_BITS)
+)

@@ -10,7 +10,6 @@ import (
 	"github.com/Eyevinn/mp4ff/bits"
 	"github.com/Eyevinn/mp4ff/mp4"
 	"github.com/gopxl/beep"
-	"gonum.org/v1/gonum/dsp/fourier"
 )
 
 func NewSpotifyMP4AACStreamer(trackId string, client *spotify.Client) (beep.StreamSeekCloser, beep.Format, error) {
@@ -79,36 +78,20 @@ type fmp4Streamer struct {
 	closed bool
 }
 
-func coef(coef1, coef2 [1024]float64) (smp0, smp1 []float64) {
-	smp0, smp1 = make([]float64, 1024), make([]float64, 1024)
-
-	ifft := fourier.NewFFT(1024)
-
-	tds1 := ifft.Coefficients(nil, coef1[:])
-	tds2 := ifft.Coefficients(nil, coef2[:])
-
-	for i := 0; i < len(tds1); i++ {
-		smp0[i] = real(tds1[i])
-		smp1[i] = real(tds2[i])
-	}
-
-	return smp0, smp1
-}
-
 func (s *fmp4Streamer) Stream(samples [][2]float64) (n int, ok bool) {
 	if s.closed {
 		s.err = ErrClosed
 		return 0, false
 	}
 	frame := s.frames[s.i]
-
 	fmt.Println("frame", s.i)
-	pcm0, _ := coef(aac.DecodeAACFrame(frame.Data, s.frequencyIndex, s.frameLengthFlag))
-	fmt.Println(pcm0)
 
-	/*for i := range samples {
-		samples[i][0] = pcm0[i]
-	}*/
+	samples0, _ := aac.DecodeAACFrame(frame.Data, s.frequencyIndex, s.frameLengthFlag)
+
+	for i := range samples {
+		samples[i][0] = samples0[i]
+		//samples[i][1] = samples1[i]
+	}
 
 	s.i++
 	return len(samples), true

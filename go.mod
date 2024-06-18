@@ -21,6 +21,7 @@ require (
 require (
 	fyne.io/systray v1.10.1-0.20231230205326-d160fd363db9 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
+	github.com/argusdusty/gofft v1.2.1 // indirect
 	github.com/chmike/cmac-go v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/ebitengine/oto/v3 v3.1.0 // indirect

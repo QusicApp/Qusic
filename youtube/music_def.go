@@ -2,7 +2,7 @@ package youtube
 
 import (
 	"net/url"
-	"qusic/util"
+	"github.com/qusicapp/qusic/util"
 	"strconv"
 	"strings"
 	"time"

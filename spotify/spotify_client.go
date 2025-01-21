@@ -12,7 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"qusic/util"
+	"github.com/qusicapp/qusic/util"
 	"time"
 
 	widevine "github.com/iyear/gowidevine"

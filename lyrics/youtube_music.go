@@ -1,7 +1,7 @@
 package lyrics
 
 import (
-	"qusic/youtube"
+	"github.com/qusicapp/qusic/youtube"
 	"time"
 )
 

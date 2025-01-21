@@ -3,11 +3,11 @@ package main
 import (
 	"image"
 	"net/http"
-	"qusic/logger"
-	"qusic/lyrics"
-	pl "qusic/player"
-	"qusic/preferences"
-	"qusic/widgets"
+	"github.com/qusicapp/qusic/logger"
+	"github.com/qusicapp/qusic/lyrics"
+	pl "github.com/qusicapp/qusic/player"
+	"github.com/qusicapp/qusic/preferences"
+	"github.com/qusicapp/qusic/widgets"
 	"strings"
 	"time"
 

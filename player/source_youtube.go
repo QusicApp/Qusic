@@ -2,8 +2,8 @@ package player
 
 import (
 	"fmt"
-	"qusic/preferences"
-	"qusic/youtube"
+	"github.com/qusicapp/qusic/preferences"
+	"github.com/qusicapp/qusic/youtube"
 	"unsafe"
 )
 

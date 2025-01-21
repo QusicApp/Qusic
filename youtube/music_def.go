@@ -188,6 +188,7 @@ type Range struct {
 }
 
 type Format struct {
+	AudioChannels int `json:"audioChannels"`
 	ApproxDurationMS util.StringInt `json:"approxDurationMs"`
 	AverageBitrate   int            `json:"averageBitrate"`
 	Bitrate          int            `json:"bitrate"`

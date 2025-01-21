@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"image"
 	"net/http"
-	"qusic/logger"
-	"qusic/preferences"
-	"qusic/widgets"
+	"github.com/qusicapp/qusic/logger"
+	"github.com/qusicapp/qusic/preferences"
+	"github.com/qusicapp/qusic/widgets"
 
-	pl "qusic/player"
+	pl "github.com/qusicapp/qusic/player"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"

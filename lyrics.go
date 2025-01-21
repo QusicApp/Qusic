@@ -3,9 +3,9 @@ package main
 import (
 	"cmp"
 	"fmt"
-	"qusic/logger"
-	"qusic/lyrics"
-	"qusic/widgets"
+	"github.com/qusicapp/qusic/logger"
+	"github.com/qusicapp/qusic/lyrics"
+	"github.com/qusicapp/qusic/widgets"
 	"slices"
 	"strconv"
 	"strings"

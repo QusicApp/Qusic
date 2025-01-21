@@ -1,7 +1,7 @@
 package lyrics
 
 import (
-	"qusic/spotify"
+	"github.com/qusicapp/qusic/spotify"
 	"time"
 )
 

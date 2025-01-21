@@ -1,9 +1,9 @@
 package main
 
 import (
-	"qusic/constant"
-	"qusic/logger"
-	"qusic/preferences"
+	"github.com/qusicapp/qusic/constant"
+	"github.com/qusicapp/qusic/logger"
+	"github.com/qusicapp/qusic/preferences"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"

@@ -1,4 +1,4 @@
-module qusic
+module github.com/qusicapp/qusic
 
 go 1.22.2
 

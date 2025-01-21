@@ -3,9 +3,9 @@ package streamer
 import (
 	"bytes"
 	"fmt"
-	"qusic/preferences"
-	"qusic/spotify"
-	"qusic/streamer/aac"
+	"github.com/qusicapp/qusic/preferences"
+	"github.com/qusicapp/qusic/spotify"
+	"github.com/qusicapp/qusic/streamer/aac"
 
 	"github.com/Eyevinn/mp4ff/bits"
 	"github.com/Eyevinn/mp4ff/mp4"

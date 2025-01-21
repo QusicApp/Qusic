@@ -1,9 +1,9 @@
 package player
 
 import (
-	"qusic/preferences"
-	"qusic/spotify"
-	"qusic/youtube"
+	"github.com/qusicapp/qusic/preferences"
+	"github.com/qusicapp/qusic/spotify"
+	"github.com/qusicapp/qusic/youtube"
 	"strconv"
 	"strings"
 	"time"

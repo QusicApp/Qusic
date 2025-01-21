@@ -1,6 +1,6 @@
 package spotify
 
-import "qusic/util"
+import "github.com/qusicapp/qusic/util"
 
 type QueryType string
 

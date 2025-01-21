@@ -1,7 +1,7 @@
 package streamer
 
 import (
-	"qusic/util"
+	"github.com/qusicapp/qusic/util"
 
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/effects"

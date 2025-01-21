@@ -1,9 +1,9 @@
 package player
 
 import (
-	"qusic/lyrics"
-	"qusic/preferences"
-	"qusic/streamer"
+	"github.com/qusicapp/qusic/lyrics"
+	"github.com/qusicapp/qusic/preferences"
+	"github.com/qusicapp/qusic/streamer"
 	"time"
 
 	"github.com/gopxl/beep"

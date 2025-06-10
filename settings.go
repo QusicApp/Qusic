@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -47,7 +48,6 @@ func settingsGeneralTab() fyne.CanvasObject {
 		preferences.Preferences.SetBool("debug_mode", b)
 	})
 	settingsDebugModeCheck.SetChecked(preferences.Preferences.Bool("debug_mode"))
-	settingsDebugModeCheck.Hide()
 
 	return container.NewVBox(
 		widget.NewRichTextFromMarkdown("# General"),
@@ -103,7 +103,7 @@ var formats = map[string]int{
 	"opus": 1,
 }
 
-func settingsSourcesTab() fyne.CanvasObject {
+func settingsSourcesTab(w fyne.Window) fyne.CanvasObject {
 	sel := widget.NewSelect([]string{
 		"YouTube Music",
 		"Spotify",
@@ -187,6 +187,30 @@ func settingsSourcesTab() fyne.CanvasObject {
 	}
 	spotifysp_dcEntry.SetText(preferences.Preferences.String("spotify.sp_dc"))
 
+	spotifysp_wvdEntry := widget.NewEntry()
+	spotifysp_wvdEntry.SetPlaceHolder("WVD file")
+
+	spotifysp_wvdBrowse := widget.NewButton("Browse WVD File", func() {
+		fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil {
+				dialog.ShowError(err, w)
+				return
+			}
+			if reader == nil {
+				return
+			}
+
+			spotifysp_wvdEntry.SetText(reader.URI().Path())
+			preferences.Preferences.SetString("spotify.wvd_file", spotifysp_wvdEntry.Text)
+			spotifyClient.WVDFile = spotifysp_wvdEntry.Text
+			defer reader.Close()
+		}, w)
+
+		fileDialog.SetFilter(storage.NewExtensionFileFilter([]string{".wvd"}))
+		fileDialog.Show()
+	})
+	spotifysp_wvdEntry.SetText(preferences.Preferences.String("spotify.wvd_file"))
+
 	spotifyDYT := widget.NewCheck("Download songs from YouTube", func(b bool) {
 		preferences.Preferences.SetBool("spotify.download_yt", b)
 	})
@@ -205,6 +229,7 @@ func settingsSourcesTab() fyne.CanvasObject {
 		widget.NewRichTextFromMarkdown("## Spotify"),
 		spotifyDYT,
 		container.NewBorder(nil, nil, widget.NewLabel("Cookie"), nil, container.NewGridWithColumns(3, container.NewBorder(nil, nil, nil, spotifysp_dcCheck, spotifysp_dcEntry))),
+		container.NewBorder(nil, nil, widget.NewLabel("WVD file"), nil, container.NewGridWithColumns(3, container.NewBorder(nil, nil, nil, spotifysp_wvdBrowse, spotifysp_wvdEntry))),
 		discl,
 	)
 }
@@ -251,7 +276,7 @@ func settings(w fyne.Window) {
 
 	tabs := container.NewAppTabs(
 		container.NewTabItem("General", settingsGeneralTab()),
-		container.NewTabItem("Sources", settingsSourcesTab()),
+		container.NewTabItem("Sources", settingsSourcesTab(w)),
 		container.NewTabItem("Streaming", settingsStreamingTab()),
 		container.NewTabItem("Log", settingsLogTab()),
 	)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"math"
+
 	"github.com/qusicapp/qusic/constant"
 	discordrpc "github.com/qusicapp/qusic/discord-rpc"
 	"github.com/qusicapp/qusic/logger"
@@ -13,8 +14,9 @@ import (
 	"github.com/qusicapp/qusic/preferences"
 	"github.com/qusicapp/qusic/spotify"
 
-	"github.com/qusicapp/qusic/widgets"
 	"time"
+
+	"github.com/qusicapp/qusic/widgets"
 
 	"fyne.io/fyne/v2"
 	a "fyne.io/fyne/v2/app"
@@ -82,6 +84,9 @@ var (
 func main() {
 	logger.Info("Qusic [ made by oq ]")
 	spotifyClient.Cookie_sp_dc = preferences.Preferences.String("spotify.sp_dc")
+	spotifyClient.WVDFile = preferences.Preferences.String("spotify.wvd_file")
+	spotifyClient.InitWVD()
+
 	if preferences.Preferences.String("source") == "spotify" {
 		player.Source = spotifySource
 	}
